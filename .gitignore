@@ -1,0 +1,27 @@
+# Raw chat data — never commit
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Poetry virtual environment
+.venv/
+
+# Environment files
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
