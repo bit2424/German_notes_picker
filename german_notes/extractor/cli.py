@@ -7,47 +7,13 @@ Usage:
 """
 
 import argparse
-import csv
 import sys
 from pathlib import Path
 
 from german_notes.core.models import GermanSentence, VocabPair
+from german_notes.core.writers import write_sentences, write_vocab
 from german_notes.extractor.classifier import classify
 from german_notes.extractor.parser import parse_file
-
-_VOCAB_FIELDS = ["german", "translation", "translation_lang", "date", "sender", "raw_message"]
-_SENTENCE_FIELDS = ["sentence", "date", "sender"]
-
-
-def _write_vocab(pairs: list[VocabPair], dest: Path) -> None:
-    with open(dest, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=_VOCAB_FIELDS)
-        writer.writeheader()
-        for pair in pairs:
-            writer.writerow(
-                {
-                    "german": pair.german,
-                    "translation": pair.translation,
-                    "translation_lang": pair.translation_lang,
-                    "date": pair.date,
-                    "sender": pair.sender,
-                    "raw_message": pair.raw_message,
-                }
-            )
-
-
-def _write_sentences(sentences: list[GermanSentence], dest: Path) -> None:
-    with open(dest, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=_SENTENCE_FIELDS)
-        writer.writeheader()
-        for sent in sentences:
-            writer.writerow(
-                {
-                    "sentence": sent.sentence,
-                    "date": sent.date,
-                    "sender": sent.sender,
-                }
-            )
 
 
 def run(input_path: Path, output_dir: Path) -> None:
@@ -68,8 +34,8 @@ def run(input_path: Path, output_dir: Path) -> None:
     vocab_path = output_dir / "vocabulary.csv"
     sentences_path = output_dir / "german_sentences.csv"
 
-    _write_vocab(vocab_pairs, vocab_path)
-    _write_sentences(german_sentences, sentences_path)
+    write_vocab(vocab_pairs, vocab_path)
+    write_sentences(german_sentences, sentences_path)
 
     print(f"Processed {total} messages.")
     print(f"  Vocabulary pairs : {len(vocab_pairs):>4}  → {vocab_path}")
