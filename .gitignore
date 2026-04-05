@@ -17,6 +17,10 @@ build/
 # Environment files
 .env
 
+# Node / Frontend
+node_modules/
+frontend/dist/
+
 # OS
 .DS_Store
 Thumbs.db
