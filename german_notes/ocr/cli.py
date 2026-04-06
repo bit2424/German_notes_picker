@@ -13,8 +13,23 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from german_notes.core.models import GermanSentence, Message, VocabPair
 from german_notes.core.writers import write_sentences, write_vocab
+from german_notes.extractor.classifier import classify
 from german_notes.ocr.client import collect_images, extract_from_image
+
+
+def _classify_lines(lines: list[str]) -> tuple[list[VocabPair], list[GermanSentence]]:
+    """Run raw OCR lines through the classifier."""
+    vocab: list[VocabPair] = []
+    sentences: list[GermanSentence] = []
+    for line in lines:
+        result = classify(Message(date="", sender="notebook", text=line))
+        if isinstance(result, VocabPair):
+            vocab.append(result)
+        elif isinstance(result, GermanSentence):
+            sentences.append(result)
+    return vocab, sentences
 
 
 def run(input_path: Path, output_dir: Path, *, append: bool = False) -> None:
@@ -35,16 +50,18 @@ def run(input_path: Path, output_dir: Path, *, append: bool = False) -> None:
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    all_vocab = []
-    all_sentences = []
+    all_vocab: list[VocabPair] = []
+    all_sentences: list[GermanSentence] = []
 
     for i, image in enumerate(images, 1):
         print(f"[{i}/{len(images)}] Processing {image.name} …")
         try:
-            vocab, sentences = extract_from_image(image, api_key=api_key)
+            lines = extract_from_image(image, api_key=api_key)
+            print(f"         → {len(lines)} text lines extracted")
+            vocab, sentences = _classify_lines(lines)
             all_vocab.extend(vocab)
             all_sentences.extend(sentences)
-            print(f"         → {len(vocab)} vocab pairs, {len(sentences)} sentences")
+            print(f"         → {len(vocab)} vocab pairs, {len(sentences)} sentences classified")
         except Exception as exc:
             print(f"         ✗ Failed: {exc}", file=sys.stderr)
 

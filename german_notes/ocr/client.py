@@ -1,4 +1,8 @@
-"""Anthropic Claude vision client for notebook OCR."""
+"""Anthropic Claude vision client for notebook OCR.
+
+This module is responsible *only* for extracting raw text lines from an image.
+Classification into vocab pairs / sentences is handled by extractor/classifier.py.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +10,9 @@ import base64
 import json
 import mimetypes
 from pathlib import Path
-from typing import Any
 
 import anthropic
 
-from german_notes.core.models import GermanSentence, VocabPair
 from german_notes.ocr.prompt import SYSTEM_PROMPT, USER_PROMPT
 
 _SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
@@ -27,42 +29,18 @@ def _encode_image(path: Path) -> tuple[str, str]:
     return base64.standard_b64encode(data).decode("ascii"), media_type
 
 
-def _parse_response(raw: str, *, source_file: str) -> tuple[list[VocabPair], list[GermanSentence]]:
-    """Parse the JSON response from Claude into domain models."""
-    payload: dict[str, Any] = json.loads(raw)
-
-    vocab_pairs: list[VocabPair] = []
-    for entry in payload.get("vocab_pairs", []):
-        vocab_pairs.append(
-            VocabPair(
-                german=entry["german"],
-                translation=entry["translation"],
-                translation_lang=entry.get("translation_lang", "unknown"),
-                date="",
-                sender="notebook",
-                raw_message=f"{entry['german']} = {entry['translation']}",
-            )
-        )
-
-    sentences: list[GermanSentence] = []
-    for entry in payload.get("sentences", []):
-        sentences.append(
-            GermanSentence(
-                sentence=entry["sentence"],
-                date="",
-                sender="notebook",
-            )
-        )
-
-    return vocab_pairs, sentences
+def _parse_response(raw: str) -> list[str]:
+    """Extract the ``lines`` array from the Claude JSON response."""
+    payload = json.loads(raw)
+    return [str(line) for line in payload.get("lines", [])]
 
 
 def extract_from_image(
     image_path: Path,
     *,
     api_key: str,
-) -> tuple[list[VocabPair], list[GermanSentence]]:
-    """Send a single notebook image to Claude and return extracted data."""
+) -> list[str]:
+    """Send a notebook image to Claude Vision and return extracted text lines."""
     if image_path.suffix.lower() not in _SUPPORTED_EXTENSIONS:
         raise ValueError(
             f"Unsupported image format '{image_path.suffix}'. "
@@ -98,7 +76,7 @@ def extract_from_image(
     )
 
     response_text = message.content[0].text
-    return _parse_response(response_text, source_file=image_path.name)
+    return _parse_response(response_text)
 
 
 def collect_images(input_path: Path) -> list[Path]:
