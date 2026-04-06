@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from german_notes.api.agent import run_agent
+from german_notes.agents.orchestrator import run_agent
 from german_notes.api.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ async def chat(
     ).execute()
 
     try:
-        assistant_reply = run_agent(message, uploaded, chat_history)
+        assistant_reply = await run_agent(message, uploaded, chat_history)
     except Exception as exc:
         logger.exception("Agent error")
         raise HTTPException(status_code=502, detail=str(exc))
