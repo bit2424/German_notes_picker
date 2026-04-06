@@ -1,7 +1,7 @@
 [project]
 name = "german-notes-picker"
 version = "0.1.0"
-description = "Extract German vocabulary and sentences from WhatsApp chat exports"
+description = "German language learning agent: chat-based ingestion and storage"
 authors = [
     {name = "Nelson Quinones"}
 ]
@@ -14,7 +14,10 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-multipart",
-    "supabase"
+    "supabase",
+    "autogen-agentchat",
+    "autogen-ext[anthropic] (>=0.7.5,<0.8.0)",
+    "tiktoken (>=0.12.0,<0.13.0)",
 ]
 
 
