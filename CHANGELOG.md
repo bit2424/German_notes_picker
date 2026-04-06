@@ -4,6 +4,42 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-06 -- Migrated agent to AutoGen + unified classification pipeline
+
+### What was done
+
+**Agent framework migration**
+- Replaced the hand-rolled Claude tool-use loop (`api/agent.py`) with Microsoft AutoGen.
+- New `german_notes/agents/` package:
+  - `config.py` -- factory for `AnthropicChatCompletionClient` (Claude claude-sonnet-4-20250514).
+  - `tools.py` -- async tool functions compatible with AutoGen's `AssistantAgent`, plus a shared `classify_and_store()` pipeline that both OCR and WhatsApp tools feed into.
+  - `orchestrator.py` -- wires up the `AssistantAgent` with tools, loads prior chat history via `load_state()`, handles multimodal messages (images via `MultiModalMessage`), and returns the assistant's text reply.
+- Added `autogen-agentchat`, `autogen-ext[anthropic]`, and `tiktoken` to `pyproject.toml`.
+- `api/routes.py` now imports from `agents.orchestrator` and `await`s the async `run_agent()`.
+- Deleted the old `api/agent.py`.
+
+**Unified classification pipeline**
+- OCR module refactored: `ocr/prompt.py` now asks Claude Vision to extract raw text lines only (returns `{"lines": [...]}`). `ocr/client.py` returns `list[str]` instead of classified objects.
+- All classification (vocab pair vs. sentence) now goes through `extractor/classifier.py` as the single source of truth, regardless of whether the source is OCR or WhatsApp.
+- `ocr/cli.py` updated to run OCR lines through the classifier before writing CSV.
+
+**Chat history handling**
+- History from Supabase is converted to AutoGen agent state format and injected via `load_state()`.
+- Consecutive same-role messages are merged, empty messages are skipped, and trailing unanswered user messages are trimmed to satisfy Anthropic's strict alternation requirement.
+
+### Verified working
+
+- Simple chat (German questions answered without tools).
+- Vocabulary storage via `store_vocabulary` tool (confirmed in Supabase).
+- Sentence storage via `store_sentences` tool.
+- Chat history context (agent recalls prior conversation).
+
+### Architecture note
+
+The `agents/` package is structured for future evolution to a Swarm: each tool group (OCR, extractor, flashcards) can become its own `AssistantAgent` with `handoffs`, orchestrated by a planner agent.
+
+---
+
 ## 2026-04-05 -- Initial agent system built
 
 ### What was done
@@ -61,4 +97,16 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 See Roadmap in `CLAUDE.md`. Immediate priorities:
 1. End-to-end test with a real vocab message, photo, and WhatsApp file to confirm the full pipeline.
-2. Start on Phase 2 (Quizlet Generator) -- the main value-add beyond just storing data.
+
+2. Have an enricher for single words, the idea is that when single german words are detected or sent, the agent should be able to enrich the word with a translation, and other relevante information.
+
+If it is a noun, the gender, the plural, a sentence.
+If it is a verb, the tense, the conjugation, a sentence.
+So on for other type of words.
+
+
+3. Have a view to visualize and edit the vocabulary and sentences stored in the database.
+
+4.
+
+5. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.
