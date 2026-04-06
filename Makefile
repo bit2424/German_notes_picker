@@ -1,4 +1,12 @@
-.PHONY: up down restart rebuild logs logs-backend logs-frontend status
+VERSION ?= 0.1.0
+
+export VERSION
+
+.PHONY: up down restart rebuild logs logs-backend logs-frontend status version
+
+version:
+	@echo "Backend:  german-notes-backend:$(VERSION)"
+	@echo "Frontend: german-notes-frontend:$(VERSION)"
 
 up:
 	docker compose up -d
