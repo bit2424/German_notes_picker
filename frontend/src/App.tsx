@@ -2,9 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { type ChatMessage as ChatMessageType, fetchHistory, sendMessage } from "./api";
 import ChatInput from "./components/ChatInput";
 import ChatMessage from "./components/ChatMessage";
+import LibraryView from "./components/LibraryView";
 import "./App.css";
 
+type View = "chat" | "library";
+
 export default function App() {
+  const [activeView, setActiveView] = useState<View>("chat");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -54,30 +59,63 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>German Notes</h1>
-        <p>Send vocab, photos, or WhatsApp exports</p>
-      </header>
-      <main className="chat-area">
-        {messages.length === 0 && !loading && (
-          <div className="empty-state">
-            <p>No messages yet. Try sending a German word!</p>
-          </div>
+      <aside className={`sidebar ${sidebarOpen ? "" : "collapsed"}`}>
+        <div className="sidebar-header">
+          {sidebarOpen && <h1 className="sidebar-title">German Notes</h1>}
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {sidebarOpen ? "\u2039" : "\u203A"}
+          </button>
+        </div>
+        <nav className="sidebar-nav">
+          <button
+            className={`sidebar-link ${activeView === "chat" ? "active" : ""}`}
+            onClick={() => setActiveView("chat")}
+            title="Chat"
+          >
+            {sidebarOpen ? "Chat" : "C"}
+          </button>
+          <button
+            className={`sidebar-link ${activeView === "library" ? "active" : ""}`}
+            onClick={() => setActiveView("library")}
+            title="Library"
+          >
+            {sidebarOpen ? "Library" : "L"}
+          </button>
+        </nav>
+      </aside>
+
+      <div className="main-content">
+        {activeView === "chat" ? (
+          <>
+            <main className="chat-area">
+              {messages.length === 0 && !loading && (
+                <div className="empty-state">
+                  <p>No messages yet. Try sending a German word!</p>
+                </div>
+              )}
+              {messages.map((m) => (
+                <ChatMessage key={m.id} message={m} />
+              ))}
+              {loading && (
+                <div className="chat-message assistant">
+                  <div className="message-label">Agent</div>
+                  <div className="message-bubble typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </main>
+            <ChatInput onSend={handleSend} disabled={loading} />
+          </>
+        ) : (
+          <LibraryView />
         )}
-        {messages.map((m) => (
-          <ChatMessage key={m.id} message={m} />
-        ))}
-        {loading && (
-          <div className="chat-message assistant">
-            <div className="message-label">Agent</div>
-            <div className="message-bubble typing">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </main>
-      <ChatInput onSend={handleSend} disabled={loading} />
+      </div>
     </div>
   );
 }

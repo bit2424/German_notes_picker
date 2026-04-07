@@ -102,7 +102,8 @@ See Roadmap in `CLAUDE.md`. Immediate priorities:
 
 If it is a noun, the gender, the plural, a sentence.
 If it is a verb, the tense, the conjugation, a sentence.
-So on for other type of words.
+If it is an adjective, how is it declined in different cases and genders?
+So on for other type of words.§
 
 
 3. Have a view to visualize and edit the vocabulary and sentences stored in the database.
