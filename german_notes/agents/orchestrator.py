@@ -36,7 +36,7 @@ Your behaviour:
 - After storing data, confirm what was saved in a friendly, concise reply.
 - If the user just wants to chat or asks a question about German, respond directly \
 without calling any tool.
-- Always reply in the same language the user writes to you (Spanish or English).\
+- Always reply in English.\
 """
 
 _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
