@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 
 from german_notes.agents.orchestrator import run_agent
 from german_notes.api.supabase_client import get_supabase
@@ -97,3 +97,75 @@ async def list_sentences(limit: int = 100):
         .execute()
     )
     return {"sentences": result.data}
+
+
+# ── Vocabulary CRUD ──────────────────────────────────
+
+
+@router.patch("/vocabulary/{item_id}")
+async def update_vocabulary(item_id: str, fields: dict = Body(...)):
+    allowed = {"german", "translation", "translation_lang", "source"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    result = (
+        get_supabase()
+        .table("vocabulary")
+        .update(updates)
+        .eq("id", item_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Vocabulary item not found")
+    return result.data[0]
+
+
+@router.delete("/vocabulary/{item_id}")
+async def delete_vocabulary(item_id: str):
+    result = (
+        get_supabase()
+        .table("vocabulary")
+        .delete()
+        .eq("id", item_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Vocabulary item not found")
+    return {"ok": True}
+
+
+# ── Sentences CRUD ───────────────────────────────────
+
+
+@router.patch("/sentences/{item_id}")
+async def update_sentence(item_id: str, fields: dict = Body(...)):
+    allowed = {"sentence", "source"}
+    updates = {k: v for k, v in fields.items() if k in allowed}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    result = (
+        get_supabase()
+        .table("sentences")
+        .update(updates)
+        .eq("id", item_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Sentence not found")
+    return result.data[0]
+
+
+@router.delete("/sentences/{item_id}")
+async def delete_sentence(item_id: str):
+    result = (
+        get_supabase()
+        .table("sentences")
+        .delete()
+        .eq("id", item_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Sentence not found")
+    return {"ok": True}
