@@ -11,24 +11,24 @@ The user communicates in **Spanish or English**. The stored content is **German*
 ```
 User (React chat UI)
   |
-  POST /api/chat  (multipart: text + files)
+  POST /api/chats/{chat_id}/messages  (multipart: text + files)
   |
   FastAPI backend (api/routes.py)
   |
   AutoGen AssistantAgent (agents/orchestrator.py)
   |  powered by AnthropicChatCompletionClient (Claude)
   |
-  |--- store_vocabulary     -> Supabase `vocabulary` table
-  |--- store_sentences      -> Supabase `sentences` table
-  |--- extract_from_image   -> OCR (raw text) -> classifier.py -> store
-  |--- parse_whatsapp_export-> parser.py -> classifier.py -> store
+  |--- store_words           -> Supabase `words` + `translations` tables
+  |--- store_texts           -> Supabase `texts` table
+  |--- extract_from_image    -> OCR (raw text) -> classifier.py -> store
+  |--- parse_whatsapp_export -> parser.py -> classifier.py -> store
   |--- [FUTURE] generate_quizlet
   |--- [FUTURE] explain_topic
 ```
 
 The agent is powered by **AutoGen** (`autogen-agentchat` + `autogen-ext[anthropic]`). Tools are plain async Python functions registered with an `AssistantAgent`. Adding a new capability = adding a tool function in `agents/tools.py`.
 
-All extraction pipelines (OCR, WhatsApp) feed through `extractor/classifier.py` as the single source of truth for classifying content into vocab pairs vs. German sentences. The OCR module only extracts raw text lines; classification is always done downstream.
+All extraction pipelines (OCR, WhatsApp) feed through `extractor/classifier.py` as the single source of truth for classifying content into vocab pairs vs. German texts. The OCR module only extracts raw text lines; classification is always done downstream.
 
 ## Tech Stack
 
@@ -99,7 +99,11 @@ All tables have RLS disabled (personal single-user app). Every table includes `c
 
 ### Operational
 
-- **`chat_messages`** -- `id` (uuid PK), `role` (text: "user"/"assistant"), `content` (text), `attachments` (jsonb), timestamps. Unchanged from original; used for agent conversation history.
+- **`chats`** -- `id` (uuid PK), `name` (text), `description` (text, nullable), timestamps. Each chat is a named conversation session. Sorted by `updated_at DESC` so the most recently active chat appears first.
+
+- **`chat_tags`** -- `(chat_id, tag_id)` composite PK. Allows grouping chats by topic/category using the shared `tags` table.
+
+- **`chat_messages`** -- `id` (uuid PK), `chat_id` (uuid FK → chats, NOT NULL), `role` (text: "user"/"assistant"), `content` (text), `attachments` (jsonb), timestamps. Every message belongs to a specific chat.
 
 ## Database Conventions
 
@@ -137,10 +141,10 @@ Follow these rules when creating new tables, adding columns, or making any schem
 
 ### Naming Conventions
 
-- Table names: **lowercase `snake_case`**, plural (e.g., `vocabulary`, `sentences`, `chat_messages`).
+- Table names: **lowercase `snake_case`**, plural (e.g., `words`, `texts`, `chat_messages`).
 - Column names: **lowercase `snake_case`**.
-- Index names: `<table>_<column(s)>_idx` (e.g., `sentences_vocabulary_id_idx`).
-- FK constraint names: `<child_table>_<column>_fkey` (e.g., `sentences_vocabulary_id_fkey`).
+- Index names: `<table>_<column(s)>_idx` (e.g., `translations_word_id_idx`).
+- FK constraint names: `<child_table>_<column>_fkey` (e.g., `translations_word_id_fkey`).
 - Trigger names: `set_updated_at` (reuse the same function, one trigger per table).
 
 ### Migration Discipline
@@ -168,7 +172,7 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | `ocr/client.py` | Sends images to Claude Vision, returns raw text lines (`list[str]`) |
 | `ocr/cli.py` | Standalone CLI for notebook OCR |
 | `api/main.py` | FastAPI app, CORS, lifespan (dotenv loading) |
-| `api/routes.py` | REST endpoints: `POST /api/chat`, `GET /api/chat/history`, `GET /api/vocabulary`, `GET /api/sentences` |
+| `api/routes.py` | REST endpoints: chats CRUD (`/api/chats`), messages (`/api/chats/{id}/messages`), words, texts, translations |
 | `api/tools.py` | Legacy tool handlers (kept for reference; agents/tools.py is the active version) |
 | `api/supabase_client.py` | `get_supabase()` singleton via `lru_cache` |
 
@@ -176,9 +180,10 @@ Follow these rules when creating new tables, adding columns, or making any schem
 
 | File | Purpose |
 |------|---------|
-| `src/App.tsx` | Main chat layout, message state, send handler |
-| `src/api.ts` | API functions: `sendMessage`, `fetchHistory`, `fetchWords`, `fetchTexts`, translations CRUD |
+| `src/App.tsx` | Main layout, multi-chat state (chats list, active chat), message handling, view switching |
+| `src/api.ts` | API functions: chat CRUD, `sendMessage`, `fetchHistory` (scoped to chat), words, texts, translations |
 | `src/components/ChatInput.tsx` | Text input + file upload (`+` button), file previews |
+| `src/components/ChatList.tsx` | Sidebar chat list: create, rename, delete, switch between chats |
 | `src/components/ChatMessage.tsx` | Message bubble (user vs assistant styling) |
 | `src/components/LibraryView.tsx` | Tab container switching between WordsTable and TextsTable |
 | `src/components/WordsTable.tsx` | Words list with nested translations, inline editing, search, soft delete |
@@ -194,13 +199,13 @@ Follow these rules when creating new tables, adding columns, or making any schem
 
 3. **Async agent.** `run_agent()` is `async`. The FastAPI route `await`s it. AutoGen is async-first.
 
-4. **Chat history via state loading.** The last 20 messages from `chat_messages` are converted into an AutoGen agent state dict and loaded via `load_state()` before each turn. Consecutive same-role messages are merged and trailing unanswered user messages are trimmed to maintain Anthropic's strict alternation requirement.
+4. **Chat history via state loading.** The last 20 messages from the active chat's `chat_messages` are converted into an AutoGen agent state dict and loaded via `load_state()` before each turn. Consecutive same-role messages are merged and trailing unanswered user messages are trimmed to maintain Anthropic's strict alternation requirement. Each chat is an independent conversation with its own history.
 
 5. **Reuse existing extractors.** The WhatsApp parser and OCR client were built and tested before the agent existed. The agent tools call them directly rather than reimplementing.
 
 6. **RLS disabled.** This is a personal single-user app. No auth layer. If it ever becomes multi-user, re-enable RLS and add Supabase Auth.
 
-7. **Port 8001.** Port 8000 is occupied by another local service (Django). The frontend `api.ts` is hardcoded to `http://localhost:8001/api`.
+7. **Port 8001.** Port 8000 is occupied by another local service (Django). The frontend uses a relative `/api` base path, proxied to port 8001 via `vite.config.ts`.
 
 ## Coding Conventions
 

@@ -4,6 +4,34 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-07 -- Multi-chat sessions with named conversations
+
+### What was done
+
+**Database (3 Supabase migrations)**
+- Created `chats` table with `name`, `description`, and lifecycle timestamps.
+- Created `chat_tags` junction table for grouping chats via the shared `tags` system.
+- Added `chat_id` (FK → chats, NOT NULL) to `chat_messages`. Migrated all 20 existing messages to a default "First Chat".
+
+**Backend**
+- New endpoints: `GET/POST/PATCH/DELETE /api/chats` for chat CRUD.
+- Replaced `/api/chat` and `/api/chat/history` with `/api/chats/{chat_id}/messages` (GET and POST). All messages are now scoped to a specific chat.
+- Sending a message touches the chat's `updated_at` so recently active chats sort first.
+
+**Frontend**
+- New `ChatList` component in the sidebar: shows all chats sorted by recency, with inline rename (pencil icon) and delete (× icon).
+- "+" button to create a new chat. Large "New Chat" CTA when no chat is selected.
+- Chat header shows the active chat's name above the message area.
+- `App.tsx` manages `chats[]`, `activeChatId` state. Switching chats loads that chat's message history.
+- `sendMessage()` and `fetchHistory()` now take `chatId` as the first argument.
+
+### SQL migrations applied
+1. `create_chats_table` -- chats + chat_tags + disable RLS
+2. `add_chat_id_to_messages` -- add nullable chat_id FK + index
+3. `make_chat_id_not_null` -- enforce NOT NULL after data migration
+
+---
+
 ## 2026-04-07 -- Schema redesign: words, texts, translations, explanations, tags, corrections
 
 ### What was done
