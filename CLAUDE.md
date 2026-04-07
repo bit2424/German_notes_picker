@@ -57,13 +57,49 @@ Environment variables live in `.env` (gitignored). Required keys: `ANTHROPIC_API
 
 ## Database Schema (Supabase)
 
-Three tables, all with RLS disabled for personal use:
+All tables have RLS disabled (personal single-user app). Every table includes `created_at`, `updated_at`, and `deleted_at` (soft-delete) columns following the conventions below, except junction tables which use composite PKs without lifecycle columns.
 
-- **`vocabulary`** -- `id` (uuid PK), `german` (text), `translation` (text), `translation_lang` (text), `source` (text: "whatsapp"/"notebook"/"chat"), `date` (text), `sender` (text), `raw_message` (text), `created_at` (timestamptz)
-- **`sentences`** -- `id` (uuid PK), `sentence` (text), `source` (text), `date` (text), `sender` (text), `created_at` (timestamptz)
-- **`chat_messages`** -- `id` (uuid PK), `role` (text: "user"/"assistant"), `content` (text), `attachments` (jsonb), `created_at` (timestamptz)
+### Core Domain Tables
 
-Indexes exist on `created_at DESC` for all three tables.
+- **`words`** -- `id` (uuid PK), `german` (text), `word_type` (text: "verb"/"noun"/"adjective"/"other"), `source` (text: "whatsapp"/"notebook"/"chat"/"manual"), `date` (text), `sender` (text), `raw_message` (text), timestamps. Replaces the old `vocabulary` table; German content only, translations are in a separate table.
+
+- **`texts`** -- `id` (uuid PK), `content` (text), `source` (text), `date` (text), `sender` (text), timestamps. Replaces the old `sentences` table. A "text" can be a sentence, phrase, or short paragraph.
+
+### Word Detail Tables (type-specific grammar)
+
+- **`verb_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `infinitive` (text), `present` (text), `participle` (text), timestamps. 1:1 with words where `word_type='verb'`.
+
+- **`noun_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `article` (text: "der"/"die"/"das"), `plural` (text), timestamps. 1:1 with words where `word_type='noun'`.
+
+- **`adjective_declensions`** -- `id` (uuid PK), `word_id` (uuid FK → words), `case_type` (text: "nominativ"/"akkusativ"/"dativ"/"genitiv"), `gender` (text: "maskulin"/"feminin"/"neutrum"/"plural"), `form` (text), timestamps. 1:N with words where `word_type='adjective'`. Unique on `(word_id, case_type, gender)` for active rows.
+
+### Translations
+
+- **`translations`** -- `id` (uuid PK), `word_id` (uuid FK → words), `language` (text: "es"/"en"), `translation` (text), timestamps. A word can have multiple translations in different languages.
+
+### Relationships
+
+- **`text_words`** -- `id` (uuid PK), `text_id` (uuid FK → texts), `word_id` (uuid FK → words), `position` (int), timestamps. M:N junction linking words that appear in texts.
+
+### Explanations (Polymorphic)
+
+- **`explanations`** -- `id` (uuid PK), `entity_type` (text: "word"/"text"/"translation"/"text_word"), `entity_id` (uuid), `content` (text), timestamps. Polymorphic: any entity can have explanations without schema changes. No DB-level FK — integrity enforced in application code. Indexed on `(entity_type, entity_id)`.
+
+### Tags
+
+- **`tags`** -- `id` (uuid PK), `name` (text, UNIQUE), `created_at`, `deleted_at`. Topics ("animals", "school"), grammar concepts ("Konjunktiv II", "Dativ"), or any user-defined label.
+
+- **`word_tags`** -- `(word_id, tag_id)` composite PK. Broad labels that apply to the word itself.
+- **`text_tags`** -- `(text_id, tag_id)` composite PK. Topic/grammar tags on texts.
+- **`explanation_tags`** -- `(explanation_id, tag_id)` composite PK. Meaning-specific tags to isolate polysemy.
+
+### Corrections
+
+- **`corrections`** -- `id` (uuid PK), `word_id` (uuid FK → words, nullable), `text_id` (uuid FK → texts, nullable), `original_text` (text), `corrected_text` (text), `note` (text), `status` (text: "pending"/"accepted"/"rejected"), timestamps. Exclusive FK: exactly one of `word_id` or `text_id` must be set. Only German content is corrected, never translations or explanations. A word or text can have multiple corrections.
+
+### Operational
+
+- **`chat_messages`** -- `id` (uuid PK), `role` (text: "user"/"assistant"), `content` (text), `attachments` (jsonb), timestamps. Unchanged from original; used for agent conversation history.
 
 ## Database Conventions
 
@@ -141,9 +177,12 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | File | Purpose |
 |------|---------|
 | `src/App.tsx` | Main chat layout, message state, send handler |
-| `src/api.ts` | `sendMessage()` and `fetchHistory()` -- talks to FastAPI backend on port 8001 |
+| `src/api.ts` | API functions: `sendMessage`, `fetchHistory`, `fetchWords`, `fetchTexts`, translations CRUD |
 | `src/components/ChatInput.tsx` | Text input + file upload (`+` button), file previews |
 | `src/components/ChatMessage.tsx` | Message bubble (user vs assistant styling) |
+| `src/components/LibraryView.tsx` | Tab container switching between WordsTable and TextsTable |
+| `src/components/WordsTable.tsx` | Words list with nested translations, inline editing, search, soft delete |
+| `src/components/TextsTable.tsx` | Texts list with inline editing, search, soft delete |
 | `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews |
 | `src/index.css` | CSS variables, dark/light mode via `prefers-color-scheme` |
 

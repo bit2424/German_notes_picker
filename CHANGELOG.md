@@ -4,6 +4,51 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-07 -- Schema redesign: words, texts, translations, explanations, tags, corrections
+
+### What was done
+
+**Database schema redesign (6 Supabase migrations)**
+- Replaced `vocabulary` and `sentences` tables with a richer relational schema:
+  - `words` -- German words with `word_type` discriminator (verb/noun/adjective/other).
+  - `verb_details`, `noun_details`, `adjective_declensions` -- type-specific grammar tables (1:1 or 1:N to words).
+  - `translations` -- separate table for word translations (1:N, supports multiple languages).
+  - `texts` -- replaces `sentences`, more general (sentence/phrase/paragraph).
+  - `text_words` -- M:N junction linking words to texts (with position).
+  - `explanations` -- polymorphic table (entity_type + entity_id) for attaching explanations to any entity.
+  - `tags` + junction tables (`word_tags`, `text_tags`, `explanation_tags`) for categorization.
+  - `corrections` -- tracks original vs. corrected German text with status workflow (pending/accepted/rejected).
+- All tables follow new conventions: `uuid` PK, `created_at`/`updated_at`/`deleted_at` timestamps, soft deletes, FK indexes.
+- Created shared `update_updated_at()` trigger function reused across all tables.
+- Added `updated_at`/`deleted_at` to `chat_messages` for consistency.
+- Disabled RLS on all new tables (personal single-user app).
+- Migrated existing data: 11 vocabulary rows → words + translations, 2 sentences → texts.
+- Dropped old `vocabulary` and `sentences` tables.
+
+**Backend updates**
+- `agents/tools.py` -- storage functions now insert into `words` + `translations` (two-step) and `texts`. Renamed `store_vocabulary` → `store_words`, `store_sentences` → `store_texts`.
+- `agents/orchestrator.py` -- updated imports and system prompt for new tool names.
+- `api/routes.py` -- new endpoints: `GET/PATCH/DELETE /api/words` (with nested translations via Supabase join), `POST /api/words/{id}/translations`, `PATCH/DELETE /api/translations/{id}`, `GET/PATCH/DELETE /api/texts`. All deletes are now soft deletes. All queries filter `deleted_at IS NULL`.
+
+**Frontend updates**
+- `api.ts` -- new TypeScript interfaces (`WordItem`, `TextItem`, `Translation`) and API functions matching new endpoints.
+- Renamed `VocabularyTable.tsx` → `WordsTable.tsx`, `SentencesTable.tsx` → `TextsTable.tsx`.
+- `WordsTable` displays nested translations from the joined response and supports editing both word and translation in one flow.
+- `LibraryView` tabs renamed from "Vocabulary"/"Sentences" to "Words"/"Texts".
+
+**Documentation**
+- `CLAUDE.md` -- added "Database Conventions" section (UUID PKs, timestamps, soft deletes, FK indexing, naming, migration discipline, new-table template). Updated schema documentation to reflect all 14 tables.
+
+### SQL migrations applied (in order)
+1. `create_trigger_function_and_core_tables` -- trigger fn, words, texts
+2. `create_word_detail_tables` -- verb_details, noun_details, adjective_declensions
+3. `create_translations_and_text_words` -- translations, text_words
+4. `create_explanations_tags_corrections` -- explanations, tags, junction tables, corrections
+5. `update_chat_messages_drop_legacy_tables` -- add lifecycle columns to chat_messages, drop old tables
+6. `disable_rls_on_new_tables` -- disable RLS on all 13 new tables
+
+---
+
 ## 2026-04-06 -- Migrated agent to AutoGen + unified classification pipeline
 
 ### What was done
