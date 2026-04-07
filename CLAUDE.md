@@ -65,6 +65,55 @@ Three tables, all with RLS disabled for personal use:
 
 Indexes exist on `created_at DESC` for all three tables.
 
+## Database Conventions
+
+Follow these rules when creating new tables, adding columns, or making any schema changes. All DDL must be executed through the Supabase SQL Editor (or via a migration file if we add a migration tool later).
+
+### Primary Keys
+
+- Use `uuid` as the PK type for all tables (consistent with the existing schema).
+- Use `gen_random_uuid()` as the default. If the `pg_uuidv7` extension is available, prefer `uuid_generate_v7()` for time-ordered IDs with better index locality.
+- Column name: always `id`.
+
+### Timestamps
+
+- Every table **must** have `created_at timestamptz not null default now()`.
+- Every table **must** have `updated_at timestamptz not null default now()` with a trigger that auto-updates it on row modification.
+- Always use `timestamptz`, never `timestamp`.
+
+### Soft Deletes
+
+- Every table **must** have a `deleted_at timestamptz` column (nullable, default `null`).
+- A row is considered active when `deleted_at IS NULL`.
+- Never use hard `DELETE` in application code. Instead, set `deleted_at = now()`.
+- All queries must include `WHERE deleted_at IS NULL` unless explicitly recovering deleted data.
+- Add a partial index on `deleted_at` for efficient filtering of active rows:
+
+### Foreign Keys
+
+- Always define explicit foreign key constraints between related tables.
+- Use `references <table>(id)` syntax.
+- Choose the appropriate `ON DELETE` behavior:
+  - `on delete cascade` -- when child rows have no meaning without the parent.
+  - `on delete set null` -- when the child can exist independently but the link is optional.
+  - `on delete restrict` (default) -- when deleting a parent with children should be an error.
+- **Always create an index on every FK column.** Postgres does not auto-index FK columns, and missing indexes cause slow JOINs and CASCADE operations.
+
+### Naming Conventions
+
+- Table names: **lowercase `snake_case`**, plural (e.g., `vocabulary`, `sentences`, `chat_messages`).
+- Column names: **lowercase `snake_case`**.
+- Index names: `<table>_<column(s)>_idx` (e.g., `sentences_vocabulary_id_idx`).
+- FK constraint names: `<child_table>_<column>_fkey` (e.g., `sentences_vocabulary_id_fkey`).
+- Trigger names: `set_updated_at` (reuse the same function, one trigger per table).
+
+### Migration Discipline
+
+- Document every schema change in `CHANGELOG.md` with the exact SQL executed.
+- When adding columns to existing tables, always provide a `DEFAULT` or make them nullable to avoid breaking existing rows.
+- When renaming or removing columns, do it in two steps: (1) add the new column / stop using the old one in code, (2) drop the old column after verifying nothing references it.
+- Before running destructive DDL (`DROP`, `ALTER ... DROP COLUMN`), confirm with the user.
+
 ## Code Map
 
 ### Backend (`german_notes/`)
@@ -127,6 +176,11 @@ Indexes exist on `created_at DESC` for all three tables.
 - New tool: `generate_quizlet` -- given a topic or a date range, pull vocabulary from the DB and generate flashcard-style quiz questions.
 - The agent should be able to call this when the user says things like "quiz me on this week's vocabulary" or "create flashcards for food words."
 - Output: a structured quiz object (question + options + correct answer) that the frontend can render interactively.
+
+### Phase 3: Data correction
+- New tool: `correct_data` -- the agent should be able to correct the data in the database.
+- If a word in **German** is not correct or spelled wrong, the agent should be able to correct it and make a note of the mistake.
+
 
 ### Phase 3: Topic Explainer
 - New tool: `explain_topic` -- the user asks a German grammar question ("when do I use Dativ?") and the agent generates a clear explanation using examples from the user's own stored vocabulary/sentences.

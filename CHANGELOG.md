@@ -98,16 +98,18 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 See Roadmap in `CLAUDE.md`. Immediate priorities:
 1. End-to-end test with a real vocab message, photo, and WhatsApp file to confirm the full pipeline.
 
+2. we need to create an agent to sanitize the words and sentences before storing them in the database or even if they are already stored, the agent should be able to sanitize them.
+
 2. Have an enricher for single words, the idea is that when single german words are detected or sent, the agent should be able to enrich the word with a translation, and other relevante information.
 
 If it is a noun, the gender, the plural, a sentence.
 If it is a verb, the tense, the conjugation, a sentence.
 If it is an adjective, how is it declined in different cases and genders?
-So on for other type of words.§
+So on for other type of words.
 
 
 3. Have a view to visualize and edit the vocabulary and sentences stored in the database.
 
-4.
+4. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.
 
-5. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.
+5. Add GitHub agentic workflows to automate the creation of documentation.
