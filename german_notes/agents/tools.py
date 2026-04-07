@@ -23,17 +23,16 @@ from german_notes.ocr.client import extract_from_image as ocr_extract
 # Shared pipeline: classify lines -> store in Supabase
 # ---------------------------------------------------------------------------
 
-def _store_vocab_rows(
+def _store_word_rows(
     vocab_pairs: list[VocabPair], source: str,
 ) -> int:
-    """Insert classified VocabPair objects into Supabase and return count."""
     if not vocab_pairs:
         return 0
-    rows = [
+    sb = get_supabase()
+
+    word_rows = [
         {
             "german": vp.german,
-            "translation": vp.translation,
-            "translation_lang": vp.translation_lang,
             "source": source,
             "date": vp.date,
             "sender": vp.sender,
@@ -41,26 +40,38 @@ def _store_vocab_rows(
         }
         for vp in vocab_pairs
     ]
-    res = get_supabase().table("vocabulary").insert(rows).execute()
-    return len(res.data)
+    word_res = sb.table("words").insert(word_rows).execute()
+
+    translation_rows = []
+    for vp, word_data in zip(vocab_pairs, word_res.data):
+        lang = vp.translation_lang if vp.translation_lang in ("es", "en") else "es"
+        translation_rows.append({
+            "word_id": word_data["id"],
+            "language": lang,
+            "translation": vp.translation,
+        })
+
+    if translation_rows:
+        sb.table("translations").insert(translation_rows).execute()
+
+    return len(word_res.data)
 
 
-def _store_sentence_rows(
+def _store_text_rows(
     sentences: list[GermanSentence], source: str,
 ) -> int:
-    """Insert classified GermanSentence objects into Supabase and return count."""
     if not sentences:
         return 0
     rows = [
         {
-            "sentence": s.sentence,
+            "content": s.sentence,
             "source": source,
             "date": s.date,
             "sender": s.sender,
         }
         for s in sentences
     ]
-    res = get_supabase().table("sentences").insert(rows).execute()
+    res = get_supabase().table("texts").insert(rows).execute()
     return len(res.data)
 
 
@@ -85,16 +96,16 @@ def classify_and_store(
         elif isinstance(result, GermanSentence):
             sentences.append(result)
 
-    stored_vocab = _store_vocab_rows(vocab_pairs, source)
-    stored_sents = _store_sentence_rows(sentences, source)
+    stored_words = _store_word_rows(vocab_pairs, source)
+    stored_texts = _store_text_rows(sentences, source)
 
     return {
         "lines_received": len(lines),
-        "vocab_classified": len(vocab_pairs),
-        "sentences_classified": len(sentences),
-        "vocab_stored": stored_vocab,
-        "sentences_stored": stored_sents,
-        "vocab_preview": [vp.german for vp in vocab_pairs[:5]],
+        "words_classified": len(vocab_pairs),
+        "texts_classified": len(sentences),
+        "words_stored": stored_words,
+        "texts_stored": stored_texts,
+        "words_preview": [vp.german for vp in vocab_pairs[:5]],
     }
 
 
@@ -117,16 +128,16 @@ def classify_messages_and_store(
         elif isinstance(result, GermanSentence):
             sentences.append(result)
 
-    stored_vocab = _store_vocab_rows(vocab_pairs, source)
-    stored_sents = _store_sentence_rows(sentences, source)
+    stored_words = _store_word_rows(vocab_pairs, source)
+    stored_texts = _store_text_rows(sentences, source)
 
     return {
         "messages_parsed": len(messages),
-        "vocab_classified": len(vocab_pairs),
-        "sentences_classified": len(sentences),
-        "vocab_stored": stored_vocab,
-        "sentences_stored": stored_sents,
-        "vocab_preview": [vp.german for vp in vocab_pairs[:5]],
+        "words_classified": len(vocab_pairs),
+        "texts_classified": len(sentences),
+        "words_stored": stored_words,
+        "texts_stored": stored_texts,
+        "words_preview": [vp.german for vp in vocab_pairs[:5]],
     }
 
 
@@ -134,45 +145,62 @@ def classify_messages_and_store(
 # AutoGen tool functions (called by the AssistantAgent)
 # ---------------------------------------------------------------------------
 
-async def store_vocabulary(entries: list[dict[str, str]]) -> str:
-    """Store one or more German vocabulary pairs (word + translation).
+async def store_words(entries: list[dict[str, str]]) -> str:
+    """Store one or more German words with their translations.
 
     Each entry must have keys ``german`` and ``translation``.
-    Optional: ``translation_lang``, ``source``, ``date``, ``sender``, ``raw_message``.
+    Optional: ``translation_lang`` ("es" or "en"), ``source``, ``date``,
+    ``sender``, ``raw_message``.
     """
-    rows = []
-    for e in entries:
-        rows.append(
-            {
-                "german": e["german"],
-                "translation": e["translation"],
-                "translation_lang": e.get("translation_lang", "unknown"),
-                "source": e.get("source", "chat"),
-                "date": e.get("date", ""),
-                "sender": e.get("sender", ""),
-                "raw_message": e.get("raw_message", ""),
-            }
-        )
-    result = get_supabase().table("vocabulary").insert(rows).execute()
-    return json.dumps({"stored": len(result.data), "items": [r["german"] for r in result.data]})
+    sb = get_supabase()
+    word_rows = [
+        {
+            "german": e["german"],
+            "source": e.get("source", "chat"),
+            "date": e.get("date", ""),
+            "sender": e.get("sender", ""),
+            "raw_message": e.get("raw_message", ""),
+        }
+        for e in entries
+    ]
+    word_result = sb.table("words").insert(word_rows).execute()
+
+    translation_rows = []
+    for e, word_data in zip(entries, word_result.data):
+        lang = e.get("translation_lang", "es")
+        if lang not in ("es", "en"):
+            lang = "es"
+        translation_rows.append({
+            "word_id": word_data["id"],
+            "language": lang,
+            "translation": e["translation"],
+        })
+
+    if translation_rows:
+        sb.table("translations").insert(translation_rows).execute()
+
+    return json.dumps({
+        "stored": len(word_result.data),
+        "items": [r["german"] for r in word_result.data],
+    })
 
 
-async def store_sentences(entries: list[dict[str, str]]) -> str:
-    """Store one or more German sentences for grammar review.
+async def store_texts(entries: list[dict[str, str]]) -> str:
+    """Store one or more German texts (sentences, phrases) for grammar review.
 
-    Each entry must have key ``sentence``.  Optional: ``source``, ``date``, ``sender``.
+    Each entry must have key ``content`` (or ``sentence`` for backward compat).
+    Optional: ``source``, ``date``, ``sender``.
     """
-    rows = []
-    for e in entries:
-        rows.append(
-            {
-                "sentence": e["sentence"],
-                "source": e.get("source", "chat"),
-                "date": e.get("date", ""),
-                "sender": e.get("sender", ""),
-            }
-        )
-    result = get_supabase().table("sentences").insert(rows).execute()
+    rows = [
+        {
+            "content": e.get("content") or e.get("sentence", ""),
+            "source": e.get("source", "chat"),
+            "date": e.get("date", ""),
+            "sender": e.get("sender", ""),
+        }
+        for e in entries
+    ]
+    result = get_supabase().table("texts").insert(rows).execute()
     return json.dumps({"stored": len(result.data)})
 
 

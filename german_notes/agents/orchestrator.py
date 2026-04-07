@@ -18,8 +18,8 @@ from autogen_core import CancellationToken, Image
 from german_notes.agents.config import get_model_client
 from german_notes.agents.tools import (
     make_file_tools,
-    store_sentences,
-    store_vocabulary,
+    store_texts,
+    store_words,
 )
 
 SYSTEM_PROMPT = """\
@@ -28,8 +28,8 @@ notebook photos, and WhatsApp chat exports so you can store and organise their \
 German learning material.
 
 Your behaviour:
-- When the user sends a new German word with its translation, call store_vocabulary.
-- When the user sends a German sentence for review, call store_sentences.
+- When the user sends a new German word with its translation, call store_words.
+- When the user sends a German sentence or phrase for review, call store_texts.
 - When the user attaches a photo of handwritten notes, call extract_from_image.
 - When the user attaches a WhatsApp .txt export, call parse_whatsapp_export.
 - You may call multiple tools in a single turn if needed.
@@ -144,7 +144,7 @@ async def run_agent(
     agent = AssistantAgent(
         name="german_notes_assistant",
         model_client=model_client,
-        tools=[store_vocabulary, store_sentences, ocr_tool, wa_tool],
+        tools=[store_words, store_texts, ocr_tool, wa_tool],
         system_message=SYSTEM_PROMPT,
         reflect_on_tool_use=True,
     )
