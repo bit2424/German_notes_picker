@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import anthropic
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 
+from german_notes.agents.enricher import apply_enrichments, run_enricher_propose
 from german_notes.agents.orchestrator import run_agent
 from german_notes.api.supabase_client import get_supabase
 
@@ -521,7 +522,8 @@ async def create_word(fields: dict = Body(...)):
 async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
     sb = get_supabase()
     existing = sb.table("verb_details").select("id").eq("word_id", word_id).is_("deleted_at", "null").execute()
-    row = {k: v for k, v in fields.items() if k in ("infinitive", "present", "participle")}
+    allowed_verb = ("infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie")
+    row = {k: v for k, v in fields.items() if k in allowed_verb}
     if existing.data:
         result = sb.table("verb_details").update(row).eq("id", existing.data[0]["id"]).execute()
     else:
@@ -532,7 +534,7 @@ async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
 
 @router.patch("/verb-details/{item_id}")
 async def update_verb_details(item_id: str, fields: dict = Body(...)):
-    allowed = {"infinitive", "present", "participle"}
+    allowed = {"infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
@@ -805,3 +807,27 @@ async def unlink_text_word(item_id: str):
     if not result.data:
         raise HTTPException(status_code=404, detail="Text-word link not found")
     return {"ok": True}
+
+
+# ── Word enrichment (propose + apply) ────────────────
+
+
+@router.post("/enrich/words/propose")
+async def propose_word_enrichments(body: dict = Body(...)):
+    limit = body.get("limit", 10)
+    filter_type = body.get("filter", "all")
+    try:
+        proposals = await run_enricher_propose(limit=limit, filter_type=filter_type)
+    except Exception:
+        logger.exception("Enricher agent failed")
+        raise HTTPException(status_code=502, detail="Enricher agent failed")
+    return {"proposals": proposals}
+
+
+@router.post("/enrich/words/apply")
+async def apply_word_enrichments(body: dict = Body(...)):
+    approved = body.get("approved")
+    if not approved or not isinstance(approved, list):
+        raise HTTPException(status_code=400, detail="approved array is required")
+    result = await apply_enrichments(approved)
+    return result
