@@ -32,8 +32,12 @@ function detectWordList(text: string): string[] | null {
   if (lines.length >= 2) {
     segments = lines;
   } else {
-    segments = trimmed.split(".").map((s) => s.trim()).filter(Boolean);
-    if (segments.length < 2) return null;
+    const dotParts = trimmed.split(".").map((s) => s.trim()).filter(Boolean);
+    if (dotParts.length >= 2) {
+      segments = dotParts;
+    } else {
+      segments = [trimmed];
+    }
   }
 
   const allShort = segments.every((s) => s.split(/\s+/).length <= 3);

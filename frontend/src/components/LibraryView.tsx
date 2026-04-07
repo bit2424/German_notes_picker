@@ -1,8 +1,9 @@
 import { useState } from "react";
 import WordsTable from "./WordsTable";
 import TextsTable from "./TextsTable";
+import TagsTable from "./TagsTable";
 
-type Tab = "words" | "texts";
+type Tab = "words" | "texts" | "tags";
 
 export default function LibraryView() {
   const [activeTab, setActiveTab] = useState<Tab>("words");
@@ -22,9 +23,17 @@ export default function LibraryView() {
         >
           Texts
         </button>
+        <button
+          className={`sub-tab ${activeTab === "tags" ? "active" : ""}`}
+          onClick={() => setActiveTab("tags")}
+        >
+          Tags
+        </button>
       </nav>
 
-      {activeTab === "words" ? <WordsTable /> : <TextsTable />}
+      {activeTab === "words" && <WordsTable />}
+      {activeTab === "texts" && <TextsTable />}
+      {activeTab === "tags" && <TagsTable />}
     </div>
   );
 }
