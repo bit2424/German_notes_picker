@@ -1,21 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  type VocabularyItem,
-  deleteVocabulary,
-  fetchVocabulary,
-  updateVocabulary,
+  type WordItem,
+  deleteWord,
+  fetchWords,
+  updateWord,
+  updateTranslation,
 } from "../api";
 
-export default function VocabularyTable() {
-  const [items, setItems] = useState<VocabularyItem[]>([]);
+export default function WordsTable() {
+  const [items, setItems] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Partial<VocabularyItem>>({});
+  const [editDraft, setEditDraft] = useState<{
+    german?: string;
+    translation?: string;
+    translationId?: string;
+    source?: string | null;
+  }>({});
 
   useEffect(() => {
-    fetchVocabulary()
-      .then((data) => setItems(data.vocabulary))
+    fetchWords()
+      .then((data) => setItems(data.words))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -24,18 +30,26 @@ export default function VocabularyTable() {
     if (!filter) return items;
     const q = filter.toLowerCase();
     return items.filter(
-      (v) =>
-        v.german.toLowerCase().includes(q) ||
-        v.translation.toLowerCase().includes(q)
+      (w) =>
+        w.german.toLowerCase().includes(q) ||
+        (w.translations[0]?.translation ?? "").toLowerCase().includes(q)
     );
   }, [items, filter]);
 
-  function startEdit(item: VocabularyItem) {
+  function primaryTranslation(w: WordItem): string {
+    return w.translations[0]?.translation ?? "—";
+  }
+
+  function primaryLang(w: WordItem): string {
+    return w.translations[0]?.language ?? "—";
+  }
+
+  function startEdit(item: WordItem) {
     setEditingId(item.id);
     setEditDraft({
       german: item.german,
-      translation: item.translation,
-      translation_lang: item.translation_lang,
+      translation: item.translations[0]?.translation ?? "",
+      translationId: item.translations[0]?.id,
       source: item.source,
     });
   }
@@ -47,13 +61,19 @@ export default function VocabularyTable() {
 
   async function saveEdit(id: string) {
     try {
-      const updated = await updateVocabulary(id, {
+      await updateWord(id, {
         german: editDraft.german,
-        translation: editDraft.translation,
-        translation_lang: editDraft.translation_lang,
         source: editDraft.source ?? undefined,
       });
-      setItems((prev) => prev.map((v) => (v.id === id ? updated : v)));
+
+      if (editDraft.translationId && editDraft.translation) {
+        await updateTranslation(editDraft.translationId, {
+          translation: editDraft.translation,
+        });
+      }
+
+      const refreshed = await fetchWords();
+      setItems(refreshed.words);
       cancelEdit();
     } catch {
       /* keep editing on failure */
@@ -61,10 +81,10 @@ export default function VocabularyTable() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this vocabulary entry?")) return;
+    if (!confirm("Delete this word?")) return;
     try {
-      await deleteVocabulary(id);
-      setItems((prev) => prev.filter((v) => v.id !== id));
+      await deleteWord(id);
+      setItems((prev) => prev.filter((w) => w.id !== id));
     } catch {
       /* swallow */
     }
@@ -76,13 +96,13 @@ export default function VocabularyTable() {
   }
 
   if (loading) {
-    return <div className="table-loading">Loading vocabulary…</div>;
+    return <div className="table-loading">Loading words…</div>;
   }
 
   if (items.length === 0) {
     return (
       <div className="table-empty">
-        No vocabulary stored yet. Send some German words in the chat!
+        No words stored yet. Send some German words in the chat!
       </div>
     );
   }
@@ -93,7 +113,7 @@ export default function VocabularyTable() {
         <input
           type="text"
           className="table-filter"
-          placeholder="Search vocabulary…"
+          placeholder="Search words…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -109,15 +129,16 @@ export default function VocabularyTable() {
               <th>German</th>
               <th>Translation</th>
               <th>Lang</th>
+              <th>Type</th>
               <th>Source</th>
               <th>Date</th>
               <th className="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((v) =>
-              editingId === v.id ? (
-                <tr key={v.id} className="editing-row">
+            {filtered.map((w) =>
+              editingId === w.id ? (
+                <tr key={w.id} className="editing-row">
                   <td>
                     <input
                       className="cell-input"
@@ -125,7 +146,7 @@ export default function VocabularyTable() {
                       onChange={(e) =>
                         setEditDraft((d) => ({ ...d, german: e.target.value }))
                       }
-                      onKeyDown={(e) => handleKeyDown(e, v.id)}
+                      onKeyDown={(e) => handleKeyDown(e, w.id)}
                       autoFocus
                     />
                   </td>
@@ -136,19 +157,11 @@ export default function VocabularyTable() {
                       onChange={(e) =>
                         setEditDraft((d) => ({ ...d, translation: e.target.value }))
                       }
-                      onKeyDown={(e) => handleKeyDown(e, v.id)}
+                      onKeyDown={(e) => handleKeyDown(e, w.id)}
                     />
                   </td>
-                  <td>
-                    <input
-                      className="cell-input cell-input-sm"
-                      value={editDraft.translation_lang ?? ""}
-                      onChange={(e) =>
-                        setEditDraft((d) => ({ ...d, translation_lang: e.target.value }))
-                      }
-                      onKeyDown={(e) => handleKeyDown(e, v.id)}
-                    />
-                  </td>
+                  <td className="cell-lang">{primaryLang(w)}</td>
+                  <td className="cell-source">{w.word_type}</td>
                   <td>
                     <input
                       className="cell-input"
@@ -156,12 +169,12 @@ export default function VocabularyTable() {
                       onChange={(e) =>
                         setEditDraft((d) => ({ ...d, source: e.target.value }))
                       }
-                      onKeyDown={(e) => handleKeyDown(e, v.id)}
+                      onKeyDown={(e) => handleKeyDown(e, w.id)}
                     />
                   </td>
-                  <td className="cell-date">{v.date ?? "—"}</td>
+                  <td className="cell-date">{w.date ?? "—"}</td>
                   <td className="actions-col">
-                    <button className="row-btn save-btn" onClick={() => saveEdit(v.id)}>
+                    <button className="row-btn save-btn" onClick={() => saveEdit(w.id)}>
                       Save
                     </button>
                     <button className="row-btn cancel-btn" onClick={cancelEdit}>
@@ -170,19 +183,20 @@ export default function VocabularyTable() {
                   </td>
                 </tr>
               ) : (
-                <tr key={v.id}>
-                  <td className="cell-german">{v.german}</td>
-                  <td>{v.translation}</td>
-                  <td className="cell-lang">{v.translation_lang}</td>
-                  <td className="cell-source">{v.source ?? "—"}</td>
-                  <td className="cell-date">{v.date ?? "—"}</td>
+                <tr key={w.id}>
+                  <td className="cell-german">{w.german}</td>
+                  <td>{primaryTranslation(w)}</td>
+                  <td className="cell-lang">{primaryLang(w)}</td>
+                  <td className="cell-source">{w.word_type}</td>
+                  <td className="cell-source">{w.source ?? "—"}</td>
+                  <td className="cell-date">{w.date ?? "—"}</td>
                   <td className="actions-col">
-                    <button className="row-btn edit-btn" onClick={() => startEdit(v)}>
+                    <button className="row-btn edit-btn" onClick={() => startEdit(w)}>
                       Edit
                     </button>
                     <button
                       className="row-btn delete-btn"
-                      onClick={() => handleDelete(v.id)}
+                      onClick={() => handleDelete(w.id)}
                     >
                       Delete
                     </button>

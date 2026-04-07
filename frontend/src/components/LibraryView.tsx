@@ -1,30 +1,30 @@
 import { useState } from "react";
-import VocabularyTable from "./VocabularyTable";
-import SentencesTable from "./SentencesTable";
+import WordsTable from "./WordsTable";
+import TextsTable from "./TextsTable";
 
-type Tab = "vocabulary" | "sentences";
+type Tab = "words" | "texts";
 
 export default function LibraryView() {
-  const [activeTab, setActiveTab] = useState<Tab>("vocabulary");
+  const [activeTab, setActiveTab] = useState<Tab>("words");
 
   return (
     <div className="library-view">
       <nav className="sub-tabs">
         <button
-          className={`sub-tab ${activeTab === "vocabulary" ? "active" : ""}`}
-          onClick={() => setActiveTab("vocabulary")}
+          className={`sub-tab ${activeTab === "words" ? "active" : ""}`}
+          onClick={() => setActiveTab("words")}
         >
-          Vocabulary
+          Words
         </button>
         <button
-          className={`sub-tab ${activeTab === "sentences" ? "active" : ""}`}
-          onClick={() => setActiveTab("sentences")}
+          className={`sub-tab ${activeTab === "texts" ? "active" : ""}`}
+          onClick={() => setActiveTab("texts")}
         >
-          Sentences
+          Texts
         </button>
       </nav>
 
-      {activeTab === "vocabulary" ? <VocabularyTable /> : <SentencesTable />}
+      {activeTab === "words" ? <WordsTable /> : <TextsTable />}
     </div>
   );
 }

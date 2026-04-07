@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  type SentenceItem,
-  deleteSentence,
-  fetchSentences,
-  updateSentence,
+  type TextItem,
+  deleteText,
+  fetchTexts,
+  updateText,
 } from "../api";
 
-export default function SentencesTable() {
-  const [items, setItems] = useState<SentenceItem[]>([]);
+export default function TextsTable() {
+  const [items, setItems] = useState<TextItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<Partial<SentenceItem>>({});
+  const [editDraft, setEditDraft] = useState<Partial<TextItem>>({});
 
   useEffect(() => {
-    fetchSentences()
-      .then((data) => setItems(data.sentences))
+    fetchTexts()
+      .then((data) => setItems(data.texts))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -23,12 +23,12 @@ export default function SentencesTable() {
   const filtered = useMemo(() => {
     if (!filter) return items;
     const q = filter.toLowerCase();
-    return items.filter((s) => s.sentence.toLowerCase().includes(q));
+    return items.filter((t) => t.content.toLowerCase().includes(q));
   }, [items, filter]);
 
-  function startEdit(item: SentenceItem) {
+  function startEdit(item: TextItem) {
     setEditingId(item.id);
-    setEditDraft({ sentence: item.sentence, source: item.source });
+    setEditDraft({ content: item.content, source: item.source });
   }
 
   function cancelEdit() {
@@ -38,11 +38,11 @@ export default function SentencesTable() {
 
   async function saveEdit(id: string) {
     try {
-      const updated = await updateSentence(id, {
-        sentence: editDraft.sentence,
+      const updated = await updateText(id, {
+        content: editDraft.content,
         source: editDraft.source ?? undefined,
       });
-      setItems((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      setItems((prev) => prev.map((t) => (t.id === id ? updated : t)));
       cancelEdit();
     } catch {
       /* keep editing on failure */
@@ -50,10 +50,10 @@ export default function SentencesTable() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this sentence?")) return;
+    if (!confirm("Delete this text?")) return;
     try {
-      await deleteSentence(id);
-      setItems((prev) => prev.filter((s) => s.id !== id));
+      await deleteText(id);
+      setItems((prev) => prev.filter((t) => t.id !== id));
     } catch {
       /* swallow */
     }
@@ -65,13 +65,13 @@ export default function SentencesTable() {
   }
 
   if (loading) {
-    return <div className="table-loading">Loading sentences…</div>;
+    return <div className="table-loading">Loading texts…</div>;
   }
 
   if (items.length === 0) {
     return (
       <div className="table-empty">
-        No sentences stored yet. Send some German sentences in the chat!
+        No texts stored yet. Send some German sentences in the chat!
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function SentencesTable() {
         <input
           type="text"
           className="table-filter"
-          placeholder="Search sentences…"
+          placeholder="Search texts…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -95,24 +95,24 @@ export default function SentencesTable() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Sentence</th>
+              <th>Text</th>
               <th>Source</th>
               <th>Date</th>
               <th className="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s) =>
-              editingId === s.id ? (
-                <tr key={s.id} className="editing-row">
+            {filtered.map((t) =>
+              editingId === t.id ? (
+                <tr key={t.id} className="editing-row">
                   <td>
                     <input
                       className="cell-input"
-                      value={editDraft.sentence ?? ""}
+                      value={editDraft.content ?? ""}
                       onChange={(e) =>
-                        setEditDraft((d) => ({ ...d, sentence: e.target.value }))
+                        setEditDraft((d) => ({ ...d, content: e.target.value }))
                       }
-                      onKeyDown={(e) => handleKeyDown(e, s.id)}
+                      onKeyDown={(e) => handleKeyDown(e, t.id)}
                       autoFocus
                     />
                   </td>
@@ -123,12 +123,12 @@ export default function SentencesTable() {
                       onChange={(e) =>
                         setEditDraft((d) => ({ ...d, source: e.target.value }))
                       }
-                      onKeyDown={(e) => handleKeyDown(e, s.id)}
+                      onKeyDown={(e) => handleKeyDown(e, t.id)}
                     />
                   </td>
-                  <td className="cell-date">{s.date ?? "—"}</td>
+                  <td className="cell-date">{t.date ?? "—"}</td>
                   <td className="actions-col">
-                    <button className="row-btn save-btn" onClick={() => saveEdit(s.id)}>
+                    <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>
                       Save
                     </button>
                     <button className="row-btn cancel-btn" onClick={cancelEdit}>
@@ -137,17 +137,17 @@ export default function SentencesTable() {
                   </td>
                 </tr>
               ) : (
-                <tr key={s.id}>
-                  <td>{s.sentence}</td>
-                  <td className="cell-source">{s.source ?? "—"}</td>
-                  <td className="cell-date">{s.date ?? "—"}</td>
+                <tr key={t.id}>
+                  <td>{t.content}</td>
+                  <td className="cell-source">{t.source ?? "—"}</td>
+                  <td className="cell-date">{t.date ?? "—"}</td>
                   <td className="actions-col">
-                    <button className="row-btn edit-btn" onClick={() => startEdit(s)}>
+                    <button className="row-btn edit-btn" onClick={() => startEdit(t)}>
                       Edit
                     </button>
                     <button
                       className="row-btn delete-btn"
-                      onClick={() => handleDelete(s.id)}
+                      onClick={() => handleDelete(t.id)}
                     >
                       Delete
                     </button>

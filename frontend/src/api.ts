@@ -8,21 +8,29 @@ export interface ChatMessage {
   created_at: string;
 }
 
-export interface VocabularyItem {
+export interface Translation {
+  id: string;
+  word_id: string;
+  language: "es" | "en";
+  translation: string;
+  created_at: string;
+}
+
+export interface WordItem {
   id: string;
   german: string;
-  translation: string;
-  translation_lang: string;
+  word_type: "verb" | "noun" | "adjective" | "other";
   source: string | null;
   date: string | null;
   sender: string | null;
   raw_message: string | null;
   created_at: string;
+  translations: Translation[];
 }
 
-export interface SentenceItem {
+export interface TextItem {
   id: string;
-  sentence: string;
+  content: string;
   source: string | null;
   date: string | null;
   sender: string | null;
@@ -58,58 +66,73 @@ export async function fetchHistory(
   return res.json();
 }
 
-// ── Vocabulary ──────────────────────────────────────
+// ── Words ───────────────────────────────────────────
 
-export async function fetchVocabulary(
+export async function fetchWords(
   limit = 200
-): Promise<{ vocabulary: VocabularyItem[] }> {
-  const res = await fetch(`${API_BASE}/vocabulary?limit=${limit}`);
-  if (!res.ok) throw new Error(`Vocabulary fetch failed: ${res.status}`);
+): Promise<{ words: WordItem[] }> {
+  const res = await fetch(`${API_BASE}/words?limit=${limit}`);
+  if (!res.ok) throw new Error(`Words fetch failed: ${res.status}`);
   return res.json();
 }
 
-export async function updateVocabulary(
+export async function updateWord(
   id: string,
-  fields: Partial<Pick<VocabularyItem, "german" | "translation" | "translation_lang" | "source">>
-): Promise<VocabularyItem> {
-  const res = await fetch(`${API_BASE}/vocabulary/${id}`, {
+  fields: Partial<Pick<WordItem, "german" | "word_type" | "source">>
+): Promise<WordItem> {
+  const res = await fetch(`${API_BASE}/words/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fields),
   });
-  if (!res.ok) throw new Error(`Vocabulary update failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Word update failed: ${res.status}`);
   return res.json();
 }
 
-export async function deleteVocabulary(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/vocabulary/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error(`Vocabulary delete failed: ${res.status}`);
+export async function deleteWord(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/words/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Word delete failed: ${res.status}`);
 }
 
-// ── Sentences ───────────────────────────────────────
+// ── Translations ────────────────────────────────────
 
-export async function fetchSentences(
-  limit = 200
-): Promise<{ sentences: SentenceItem[] }> {
-  const res = await fetch(`${API_BASE}/sentences?limit=${limit}`);
-  if (!res.ok) throw new Error(`Sentences fetch failed: ${res.status}`);
-  return res.json();
-}
-
-export async function updateSentence(
+export async function updateTranslation(
   id: string,
-  fields: Partial<Pick<SentenceItem, "sentence" | "source">>
-): Promise<SentenceItem> {
-  const res = await fetch(`${API_BASE}/sentences/${id}`, {
+  fields: Partial<Pick<Translation, "language" | "translation">>
+): Promise<Translation> {
+  const res = await fetch(`${API_BASE}/translations/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fields),
   });
-  if (!res.ok) throw new Error(`Sentence update failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Translation update failed: ${res.status}`);
   return res.json();
 }
 
-export async function deleteSentence(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/sentences/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error(`Sentence delete failed: ${res.status}`);
+// ── Texts ───────────────────────────────────────────
+
+export async function fetchTexts(
+  limit = 200
+): Promise<{ texts: TextItem[] }> {
+  const res = await fetch(`${API_BASE}/texts?limit=${limit}`);
+  if (!res.ok) throw new Error(`Texts fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function updateText(
+  id: string,
+  fields: Partial<Pick<TextItem, "content" | "source">>
+): Promise<TextItem> {
+  const res = await fetch(`${API_BASE}/texts/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) throw new Error(`Text update failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteText(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/texts/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Text delete failed: ${res.status}`);
 }
