@@ -113,6 +113,160 @@
   background: rgba(37, 99, 235, 0.08);
 }
 
+/* ── Chat list (sidebar) ────────────────────────── */
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem 0.25rem;
+}
+
+.chat-list-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.chat-list-new {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.chat-list-new:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.chat-list-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.chat-list-item {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--muted);
+  transition: background 0.12s, color 0.12s;
+  gap: 0.25rem;
+}
+
+.chat-list-item:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+.chat-list-item.active {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
+}
+
+.chat-list-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-list-actions {
+  display: none;
+  gap: 0.1rem;
+  flex-shrink: 0;
+}
+
+.chat-list-item:hover .chat-list-actions {
+  display: flex;
+}
+
+.chat-list-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 0 0.15rem;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.chat-list-action:hover {
+  color: var(--fg);
+}
+
+.chat-list-delete:hover {
+  color: #ef4444;
+}
+
+.chat-list-rename {
+  flex: 1;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.25rem;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+  font-family: inherit;
+}
+
+/* ── Chat header ────────────────────────────────── */
+.chat-header {
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.chat-header-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.new-chat-btn-large {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.new-chat-btn-large:hover {
+  opacity: 0.9;
+}
+
 /* ── Main content ────────────────────────────────── */
 .main-content {
   flex: 1;
@@ -138,10 +292,12 @@
 .empty-state {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: var(--muted);
   font-size: 0.95rem;
+  gap: 0.25rem;
 }
 
 /* ── Messages ─────────────────────────────────────── */
@@ -367,7 +523,7 @@
   overflow: hidden;
 }
 
-/* ── Sub-tabs (Vocabulary | Sentences) ───────────── */
+/* ── Sub-tabs (Words | Texts) ────────────────────── */
 .sub-tabs {
   display: flex;
   gap: 0.25rem;
@@ -572,4 +728,155 @@
   color: var(--muted);
   font-size: 0.9rem;
   padding: 2rem;
+}
+
+/* ── Translation suggestion card ─────────────────── */
+.suggestion-card {
+  background: var(--surface);
+  border-radius: 1rem;
+  border-bottom-left-radius: 0.3rem;
+  padding: 1rem 1.25rem;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.suggestion-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.suggestion-word-group {
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.suggestion-word-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.suggestion-german {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fg);
+}
+
+.suggestion-type-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.3rem;
+  line-height: 1.5;
+}
+
+.suggestion-type-badge.noun {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.suggestion-type-badge.verb {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.suggestion-type-badge.adjective {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+}
+
+.suggestion-type-badge.other {
+  background: rgba(168, 162, 158, 0.15);
+  color: var(--muted);
+}
+
+.suggestion-translations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.suggestion-translation-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  font-size: 0.88rem;
+  color: var(--fg);
+}
+
+.suggestion-translation-item input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.suggestion-lang-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 1.4rem;
+}
+
+.suggestion-text {
+  flex: 1;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.suggestion-btn {
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.suggestion-btn.confirm {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.suggestion-btn.confirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.suggestion-btn.confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.suggestion-btn.cancel {
+  background: transparent;
+  color: var(--muted);
+}
+
+.suggestion-btn.cancel:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+.suggestion-btn.cancel:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
