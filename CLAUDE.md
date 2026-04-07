@@ -67,7 +67,7 @@ All tables have RLS disabled (personal single-user app). Every table includes `c
 
 ### Word Detail Tables (type-specific grammar)
 
-- **`verb_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `infinitive` (text), `present` (text), `participle` (text), timestamps. 1:1 with words where `word_type='verb'`.
+- **`verb_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `infinitive` (text), `participle` (text), `present_ich` (text), `present_du` (text), `present_er` (text), `present_wir` (text), `present_ihr` (text), `present_sie` (text), timestamps. 1:1 with words where `word_type='verb'`. The six `present_*` columns store Präsens conjugation by pronoun (ich, du, er/sie/es, wir, ihr, sie/Sie).
 
 - **`noun_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `article` (text: "der"/"die"/"das"), `plural` (text), timestamps. 1:1 with words where `word_type='noun'`.
 
@@ -172,7 +172,7 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | `ocr/client.py` | Sends images to Claude Vision, returns raw text lines (`list[str]`) |
 | `ocr/cli.py` | Standalone CLI for notebook OCR |
 | `api/main.py` | FastAPI app, CORS, lifespan (dotenv loading) |
-| `api/routes.py` | REST endpoints: chats CRUD (`/api/chats`), messages (`/api/chats/{id}/messages`), words, texts, translations |
+| `api/routes.py` | REST endpoints: chats CRUD, messages, words (with detail), texts (with detail), translations, verb/noun/adj details, explanations, tags, tag assignments, corrections, text-word links |
 | `api/tools.py` | Legacy tool handlers (kept for reference; agents/tools.py is the active version) |
 | `api/supabase_client.py` | `get_supabase()` singleton via `lru_cache` |
 
@@ -181,14 +181,20 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | File | Purpose |
 |------|---------|
 | `src/App.tsx` | Main layout, multi-chat state (chats list, active chat), message handling, view switching |
-| `src/api.ts` | API functions: chat CRUD, `sendMessage`, `fetchHistory` (scoped to chat), words, texts, translations |
+| `src/api.ts` | API functions: chat CRUD, `sendMessage`, `fetchHistory`, words/texts CRUD, detail fetches, verb/noun/adj details, explanations, tags, corrections, text-word links |
 | `src/components/ChatInput.tsx` | Text input + file upload (`+` button), file previews |
 | `src/components/ChatList.tsx` | Sidebar chat list: create, rename, delete, switch between chats |
 | `src/components/ChatMessage.tsx` | Message bubble (user vs assistant styling) |
-| `src/components/LibraryView.tsx` | Tab container switching between WordsTable and TextsTable |
-| `src/components/WordsTable.tsx` | Words list with nested translations, inline editing, search, soft delete |
-| `src/components/TextsTable.tsx` | Texts list with inline editing, search, soft delete |
-| `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews |
+| `src/components/LibraryView.tsx` | Tab container switching between Words, Texts, and Tags tabs |
+| `src/components/WordsTable.tsx` | Words list with expand/collapse detail, inline editing, create, search, soft delete |
+| `src/components/TextsTable.tsx` | Texts list with expand/collapse detail, inline editing, create, search, soft delete |
+| `src/components/WordDetail.tsx` | Expanded word detail panel: translations, verb/noun/adj details, explanations, tags, corrections |
+| `src/components/TextDetail.tsx` | Expanded text detail panel: explanations, tags, corrections, linked words |
+| `src/components/TagPills.tsx` | Reusable tag pill row with add/remove, autocomplete, and create-inline for words, texts, explanations |
+| `src/components/ExplanationsList.tsx` | Reusable explanations list with inline edit, delete, add, and per-explanation tag pills |
+| `src/components/CorrectionsList.tsx` | Reusable corrections list with accept/reject status, add form, delete |
+| `src/components/TagsTable.tsx` | Global tag pool management: create, search, delete |
+| `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews, detail panels, tag pills, declension grid, corrections |
 | `src/index.css` | CSS variables, dark/light mode via `prefers-color-scheme` |
 
 ## Design Decisions

@@ -4,6 +4,70 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-07 -- Verb present tense conjugation grid
+
+### What was done
+
+**Database migration**
+- Replaced single `present` text column in `verb_details` with 6 pronoun-specific columns: `present_ich`, `present_du`, `present_er`, `present_wir`, `present_ihr`, `present_sie`.
+- SQL: `ALTER TABLE verb_details DROP COLUMN present; ALTER TABLE verb_details ADD COLUMN present_ich text, ADD COLUMN present_du text, ADD COLUMN present_er text, ADD COLUMN present_wir text, ADD COLUMN present_ihr text, ADD COLUMN present_sie text;`
+
+**Backend (`api/routes.py`)**
+- Updated `upsert_verb_details` and `update_verb_details` to accept the 6 new conjugation fields instead of the old `present` field.
+
+**Frontend (`api.ts`)**
+- Updated `VerbDetails` interface: removed `present`, added `present_ich`, `present_du`, `present_er`, `present_wir`, `present_ihr`, `present_sie`.
+- Updated `upsertVerbDetails` function signature accordingly.
+
+**Frontend (`WordDetail.tsx`)**
+- Replaced single "Present" text input with a 2-column conjugation grid showing all 6 pronoun forms (ich, du, er/sie/es, wir, ihr, sie/Sie) under a "Präsens" label.
+
+**Frontend (`App.css`)**
+- Added styles for `.conjugation-section`, `.conjugation-grid`, `.conjugation-row`, `.conjugation-pronoun`, `.conjugation-input`.
+
+---
+
+## 2026-04-07 -- Library entity management: full CRUD for all schema entities
+
+### What was done
+
+**Backend (`api/routes.py` -- 25+ new endpoints)**
+- `GET /words/{id}` -- full detail fetch with nested translations, verb/noun/adj details, explanations (with tags), word tags, corrections.
+- `GET /texts/{id}` -- full detail fetch with nested explanations (with tags), text tags, corrections, text-word links (with word names).
+- `POST /words`, `POST /texts` -- manual creation endpoints.
+- CRUD for verb details (`POST /words/{id}/verb-details` upsert, `PATCH`, `DELETE`).
+- CRUD for noun details (same pattern).
+- CRUD for adjective declensions (`POST /words/{id}/adjective-declensions`, `PATCH`, `DELETE`).
+- CRUD for explanations (polymorphic: `POST /explanations`, `PATCH`, `DELETE`).
+- Tags management: `GET /tags`, `POST /tags`, `DELETE /tags/{id}`.
+- Tag assignments: `POST/DELETE /words/{id}/tags/{tag_id}`, same for texts and explanations.
+- Corrections CRUD: `POST /corrections`, `PATCH /corrections/{id}` (status management), `DELETE`.
+- Text-word links: `POST /texts/{id}/words`, `DELETE /text-words/{id}`.
+
+**Frontend API layer (`api.ts`)**
+- New TypeScript interfaces: `VerbDetails`, `NounDetails`, `AdjDeclension`, `Tag`, `Explanation`, `Correction`, `TextWordLink`, `WordDetails`, `TextDetails`.
+- Fetch functions for all new endpoints: `fetchWordDetail`, `fetchTextDetail`, `createWord`, `createText`, `upsertVerbDetails`, `upsertNounDetails`, `createAdjDeclension`, `updateAdjDeclension`, `createExplanation`, `updateExplanation`, `deleteExplanation`, `fetchTags`, `createTag`, `deleteTag`, `addWordTag`, `removeWordTag`, `addTextTag`, `removeTextTag`, `addExplanationTag`, `removeExplanationTag`, `createCorrection`, `updateCorrection`, `deleteCorrection`, `linkTextWord`, `unlinkTextWord`, `addTranslation`, `deleteTranslation`.
+
+**Frontend components (7 new, 3 updated)**
+- New `TagPills.tsx` -- reusable tag pill row with add/remove, autocomplete dropdown, and inline tag creation.
+- New `ExplanationsList.tsx` -- reusable explanations list with inline edit, delete, add form, and per-explanation tag pills.
+- New `CorrectionsList.tsx` -- corrections list with original→corrected diff display, accept/reject buttons, status badges, add form.
+- New `WordDetail.tsx` -- expanded detail panel for words: word type selector, translations section (add/edit/delete), verb/noun/adjective details, explanations, tags, corrections.
+- New `TextDetail.tsx` -- expanded detail panel for texts: explanations, tags, corrections, linked words with search-and-link.
+- New `TagsTable.tsx` -- global tag management tab: create, search, delete tags.
+- Updated `WordsTable.tsx` -- expand/collapse rows (▶ arrow), manual "+ Add" button, renders WordDetail in expanded rows.
+- Updated `TextsTable.tsx` -- same expand/collapse and "+ Add" pattern, renders TextDetail.
+- Updated `LibraryView.tsx` -- added third "Tags" tab.
+
+**CSS (`App.css`)**
+- New styles for: expand/collapse arrows, detail panel (left accent border), detail sections, create row, translation rows, type detail fields, tag pills (with dropdown), explanation cards, correction cards (diff display, status badges), declension grid (4×4), linked word rows.
+
+**Documentation**
+- Updated `CLAUDE.md` code map (backend and frontend) to list all new endpoints and components.
+- Updated `CHANGELOG.md` with this entry.
+
+---
+
 ## 2026-04-07 -- Multi-chat sessions with named conversations
 
 ### What was done
