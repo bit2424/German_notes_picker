@@ -63,15 +63,19 @@ fields are missing.
 async def run_enricher_propose(
     limit: int = 10,
     filter_type: str = "all",
+    word_ids: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Run the enricher agent and return a list of enrichment proposals.
+
+    If *word_ids* is provided the agent enriches exactly those words;
+    otherwise it discovers incomplete words on its own.
 
     No database writes happen here — proposals are collected in-memory.
     """
     model_client = get_model_client()
 
     proposals, get_word_schema, fetch_words_to_enrich, propose_word_enrichment = (
-        make_enricher_tools()
+        make_enricher_tools(word_ids=word_ids)
     )
 
     agent = AssistantAgent(
@@ -80,18 +84,36 @@ async def run_enricher_propose(
         tools=[get_word_schema, fetch_words_to_enrich, propose_word_enrichment],
         system_message=ENRICHER_SYSTEM_PROMPT,
         reflect_on_tool_use=True,
+        max_tool_iterations=20,
     )
 
-    trigger = TextMessage(
-        content=(
+    if word_ids:
+        trigger_text = (
+            f"Please enrich the {len(word_ids)} words the user selected. "
+            f"Call get_word_schema, then fetch_words_to_enrich, "
+            f"then propose_word_enrichment for each word."
+        )
+    else:
+        trigger_text = (
             f"Please enrich up to {limit} words that match "
-            f"filter_type='{filter_type}'. Start by reading the schema."
-        ),
-        source="user",
-    )
+            f"filter_type='{filter_type}'. "
+            f"Call get_word_schema, then fetch_words_to_enrich, "
+            f"then propose_word_enrichment for each word."
+        )
+    trigger = TextMessage(content=trigger_text, source="user")
 
     try:
-        await agent.on_messages([trigger], CancellationToken())
+        response = await agent.on_messages([trigger], CancellationToken())
+        final_text = ""
+        if response.chat_message and hasattr(response.chat_message, "content"):
+            final_text = str(response.chat_message.content)[:300]
+        logger.info(
+            "Enricher finished: %d proposals. Response: %s",
+            len(proposals), final_text,
+        )
+    except Exception:
+        logger.exception("Enricher agent error")
+        raise
     finally:
         await model_client.close()
 

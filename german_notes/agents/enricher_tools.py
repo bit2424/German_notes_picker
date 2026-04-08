@@ -7,9 +7,12 @@ the proposals list is isolated to a single enrichment run.
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Callable
 
 from german_notes.api.supabase_client import get_supabase
+
+logger = logging.getLogger(__name__)
 
 WORD_TABLES = (
     "words", "translations", "verb_details", "noun_details",
@@ -108,7 +111,9 @@ _SCHEMA: dict[str, Any] = {
 }
 
 
-def make_enricher_tools() -> tuple[
+def make_enricher_tools(
+    word_ids: list[str] | None = None,
+) -> tuple[
     list[dict[str, Any]],
     Callable,
     Callable,
@@ -116,10 +121,14 @@ def make_enricher_tools() -> tuple[
 ]:
     """Return ``(proposals_list, get_word_schema, fetch_words_to_enrich, propose_word_enrichment)``.
 
+    If *word_ids* is provided, ``fetch_words_to_enrich`` restricts to those
+    specific words instead of discovering incomplete ones on its own.
+
     The *proposals_list* accumulates proposals in-memory (no DB writes)
     and is read by the caller after the agent finishes.
     """
     proposals: list[dict[str, Any]] = []
+    _pinned_ids = word_ids
 
     async def get_word_schema() -> str:
         """Return the full database schema for word-related tables.
@@ -127,6 +136,7 @@ def make_enricher_tools() -> tuple[
         Call this first so you understand every table, column, type, and
         relationship before analysing words.
         """
+        logger.info("get_word_schema called")
         return json.dumps(_SCHEMA, indent=2)
 
     async def fetch_words_to_enrich(
@@ -135,7 +145,11 @@ def make_enricher_tools() -> tuple[
     ) -> str:
         """Fetch words that have incomplete data, together with all related records.
 
-        ``filter_type`` values:
+        If specific word IDs were provided by the user, only those words are
+        returned (ignoring ``filter_type``). Otherwise words are discovered
+        by scanning for incomplete data.
+
+        ``filter_type`` values (used only when no IDs are pinned):
         - ``"all"`` — any word with missing data
         - ``"missing_type"`` — word_type is null
         - ``"missing_translations"`` — fewer than 2 translations
@@ -144,23 +158,36 @@ def make_enricher_tools() -> tuple[
         """
         sb = get_supabase()
 
-        query = (
-            sb.table("words")
-            .select(
-                "id, german, word_type, source, date, sender, "
-                "translations(id, language, translation), "
-                "verb_details(id, infinitive, participle, "
-                "  present_ich, present_du, present_er, "
-                "  present_wir, present_ihr, present_sie), "
-                "noun_details(id, article, plural), "
-                "adjective_declensions(id, case_type, gender, form), "
-                "word_tags(tag_id, tags(id, name))"
-            )
-            .is_("deleted_at", "null")
-            .order("created_at", desc=True)
+        select_cols = (
+            "id, german, word_type, source, date, sender, "
+            "translations(id, language, translation), "
+            "verb_details(id, infinitive, participle, "
+            "  present_ich, present_du, present_er, "
+            "  present_wir, present_ihr, present_sie), "
+            "noun_details(id, article, plural), "
+            "adjective_declensions(id, case_type, gender, form), "
+            "word_tags(tag_id, tags(id, name))"
         )
 
-        rows = query.limit(limit * 3).execute().data
+        if _pinned_ids:
+            rows = (
+                sb.table("words")
+                .select(select_cols)
+                .in_("id", _pinned_ids)
+                .is_("deleted_at", "null")
+                .execute()
+                .data
+            )
+        else:
+            rows = (
+                sb.table("words")
+                .select(select_cols)
+                .is_("deleted_at", "null")
+                .order("created_at", desc=True)
+                .limit(limit * 3)
+                .execute()
+                .data
+            )
 
         explanations_by_word: dict[str, list[dict]] = {}
         if rows:
@@ -199,11 +226,15 @@ def make_enricher_tools() -> tuple[
                 "explanations": explanations_by_word.get(r["id"], []),
             }
 
-            if _matches_filter(word, filter_type):
+            if _pinned_ids or _matches_filter(word, filter_type):
                 results.append(word)
                 if len(results) >= limit:
                     break
 
+        logger.info(
+            "fetch_words_to_enrich: %d words (filter=%s, limit=%d)",
+            len(results), filter_type, limit,
+        )
         return json.dumps(results, indent=2)
 
     async def propose_word_enrichment(
@@ -235,6 +266,7 @@ def make_enricher_tools() -> tuple[
             proposal["explanation"] = explanation
 
         proposals.append(proposal)
+        logger.info("Proposal recorded for '%s' (total: %d)", german, len(proposals))
         return f"Proposal recorded for '{german}'"
 
     return proposals, get_word_schema, fetch_words_to_enrich, propose_word_enrichment
