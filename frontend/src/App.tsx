@@ -18,9 +18,10 @@ import ChatMessage from "./components/ChatMessage";
 import ChatList from "./components/ChatList";
 import TranslationSuggestionCard from "./components/TranslationSuggestionCard";
 import LibraryView from "./components/LibraryView";
+import QuizletView from "./components/QuizletView";
 import "./App.css";
 
-type View = "chat" | "library";
+type View = "chat" | "library" | "quizlet";
 
 function detectWordList(text: string): string[] | null {
   const trimmed = text.trim();
@@ -244,6 +245,13 @@ export default function App() {
           >
             {sidebarOpen ? "Library" : "L"}
           </button>
+          <button
+            className={`sidebar-link ${activeView === "quizlet" ? "active" : ""}`}
+            onClick={() => setActiveView("quizlet")}
+            title="Quizlet"
+          >
+            {sidebarOpen ? "Quizlet" : "Q"}
+          </button>
         </nav>
 
         {sidebarOpen && activeView === "chat" && (
@@ -303,8 +311,10 @@ export default function App() {
             </main>
             {activeChatId && <ChatInput onSend={handleSend} disabled={loading} />}
           </>
-        ) : (
+        ) : activeView === "library" ? (
           <LibraryView />
+        ) : (
+          <QuizletView />
         )}
       </div>
     </div>

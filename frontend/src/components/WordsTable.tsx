@@ -16,6 +16,9 @@ export default function WordsTable() {
   const [items, setItems] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterSource, setFilterSource] = useState("");
+  const [filterLang, setFilterLang] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{
@@ -28,23 +31,48 @@ export default function WordsTable() {
   const [createDraft, setCreateDraft] = useState({ german: "", word_type: "other" });
   const [enriching, setEnriching] = useState(false);
   const [proposals, setProposals] = useState<EnrichmentProposal[] | null>(null);
+  const [enrichSelection, setEnrichSelection] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchWords()
-      .then((data) => setItems(data.words))
+      .then((data) => {
+        setItems(data.words);
+        setEnrichSelection(new Set(data.words.map((w) => w.id)));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  const typeOptions = useMemo(
+    () => [...new Set(items.map((w) => w.word_type).filter(Boolean))].sort(),
+    [items]
+  );
+  const sourceOptions = useMemo(
+    () => [...new Set(items.map((w) => w.source).filter(Boolean))].sort() as string[],
+    [items]
+  );
+  const langOptions = useMemo(
+    () => [...new Set(items.flatMap((w) => w.translations.map((t) => t.language)).filter(Boolean))].sort(),
+    [items]
+  );
+
+  const hasActiveFilters = filterType || filterSource || filterLang;
+
   const filtered = useMemo(() => {
-    if (!filter) return items;
-    const q = filter.toLowerCase();
-    return items.filter(
-      (w) =>
-        w.german.toLowerCase().includes(q) ||
-        (w.translations[0]?.translation ?? "").toLowerCase().includes(q)
-    );
-  }, [items, filter]);
+    return items.filter((w) => {
+      if (filter) {
+        const q = filter.toLowerCase();
+        const matchText =
+          w.german.toLowerCase().includes(q) ||
+          (w.translations[0]?.translation ?? "").toLowerCase().includes(q);
+        if (!matchText) return false;
+      }
+      if (filterType && w.word_type !== filterType) return false;
+      if (filterSource && w.source !== filterSource) return false;
+      if (filterLang && !w.translations.some((t) => t.language === filterLang)) return false;
+      return true;
+    });
+  }, [items, filter, filterType, filterSource, filterLang]);
 
   function primaryTranslation(w: WordItem): string {
     return w.translations[0]?.translation ?? "—";
@@ -114,10 +142,37 @@ export default function WordsTable() {
     }
   }
 
+  function toggleEnrichItem(id: string) {
+    setEnrichSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleEnrichAll() {
+    const visibleIds = filtered.map((w) => w.id);
+    const allVisible = visibleIds.every((id) => enrichSelection.has(id));
+    setEnrichSelection((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleIds) {
+        if (allVisible) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  }
+
   async function handleEnrich() {
+    const ids = filtered
+      .map((w) => w.id)
+      .filter((id) => enrichSelection.has(id));
+    if (ids.length === 0) return;
+
     setEnriching(true);
     try {
-      const res = await proposeEnrichments(10, "all");
+      const res = await proposeEnrichments(ids);
       setProposals(res.proposals);
     } catch {
       /* swallow */
@@ -130,7 +185,10 @@ export default function WordsTable() {
     setProposals(null);
     if (applied) {
       fetchWords()
-        .then((data) => setItems(data.words))
+        .then((data) => {
+          setItems(data.words);
+          setEnrichSelection(new Set(data.words.map((w) => w.id)));
+        })
         .catch(() => {});
     }
   }
@@ -142,10 +200,6 @@ export default function WordsTable() {
 
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
-  }
-
-  if (proposals && proposals.length > 0) {
-    return <EnrichmentReview proposals={proposals} onDone={handleEnrichDone} />;
   }
 
   if (loading) {
@@ -179,13 +233,57 @@ export default function WordsTable() {
         <button
           className="row-btn enrich-btn"
           onClick={handleEnrich}
-          disabled={enriching}
+          disabled={enriching || enrichSelection.size === 0}
         >
-          {enriching ? "Enriching..." : "Enrich"}
+          {enriching
+            ? "Enriching..."
+            : `Enrich (${filtered.filter((w) => enrichSelection.has(w.id)).length})`}
         </button>
         <button className="row-btn save-btn" onClick={() => setShowCreate(!showCreate)}>
           + Add
         </button>
+      </div>
+
+      <div className="table-filter-row">
+        <span className="table-filter-label">Filter:</span>
+        <select
+          className={`table-filter-select ${filterType ? "active" : ""}`}
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="">All types</option>
+          {typeOptions.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <select
+          className={`table-filter-select ${filterSource ? "active" : ""}`}
+          value={filterSource}
+          onChange={(e) => setFilterSource(e.target.value)}
+        >
+          <option value="">All sources</option>
+          {sourceOptions.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          className={`table-filter-select ${filterLang ? "active" : ""}`}
+          value={filterLang}
+          onChange={(e) => setFilterLang(e.target.value)}
+        >
+          <option value="">All languages</option>
+          {langOptions.map((l) => (
+            <option key={l} value={l}>{l}</option>
+          ))}
+        </select>
+        {hasActiveFilters && (
+          <button
+            className="table-filter-clear"
+            onClick={() => { setFilterType(""); setFilterSource(""); setFilterLang(""); }}
+          >
+            ✕ Clear
+          </button>
+        )}
       </div>
 
       {showCreate && (
@@ -214,6 +312,14 @@ export default function WordsTable() {
         <table className="data-table">
           <thead>
             <tr>
+              <th className="enrich-check-col">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && filtered.every((w) => enrichSelection.has(w.id))}
+                  onChange={toggleEnrichAll}
+                  title="Select all for enrichment"
+                />
+              </th>
               <th></th>
               <th>German</th>
               <th>Translation</th>
@@ -229,6 +335,13 @@ export default function WordsTable() {
               <>
                 {editingId === w.id ? (
                   <tr key={w.id} className="editing-row">
+                    <td className="enrich-check-col">
+                      <input
+                        type="checkbox"
+                        checked={enrichSelection.has(w.id)}
+                        onChange={() => toggleEnrichItem(w.id)}
+                      />
+                    </td>
                     <td></td>
                     <td>
                       <input className="cell-input" value={editDraft.german ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, german: e.target.value }))} onKeyDown={(e) => handleKeyDown(e, w.id)} autoFocus />
@@ -237,36 +350,47 @@ export default function WordsTable() {
                       <input className="cell-input" value={editDraft.translation ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, translation: e.target.value }))} onKeyDown={(e) => handleKeyDown(e, w.id)} />
                     </td>
                     <td className="cell-lang">{primaryLang(w)}</td>
-                    <td className="cell-source">{w.word_type}</td>
+                    <td><span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span></td>
                     <td>
                       <input className="cell-input" value={editDraft.source ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))} onKeyDown={(e) => handleKeyDown(e, w.id)} />
                     </td>
                     <td className="cell-date">{w.date ?? "—"}</td>
                     <td className="actions-col">
-                      <button className="row-btn save-btn" onClick={() => saveEdit(w.id)}>Save</button>
-                      <button className="row-btn cancel-btn" onClick={cancelEdit}>Cancel</button>
+                      <div className="row-actions">
+                        <button className="row-btn save-btn" onClick={() => saveEdit(w.id)}>Save</button>
+                        <button className="row-btn cancel-btn" onClick={cancelEdit}>Cancel</button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   <tr key={w.id} className={expandedId === w.id ? "expanded-row" : ""}>
+                    <td className="enrich-check-col">
+                      <input
+                        type="checkbox"
+                        checked={enrichSelection.has(w.id)}
+                        onChange={() => toggleEnrichItem(w.id)}
+                      />
+                    </td>
                     <td className="expand-cell" onClick={() => toggleExpand(w.id)}>
                       <span className={`expand-arrow ${expandedId === w.id ? "open" : ""}`}>▶</span>
                     </td>
                     <td className="cell-german" onClick={() => toggleExpand(w.id)} style={{ cursor: "pointer" }}>{w.german}</td>
-                    <td>{primaryTranslation(w)}</td>
+                    <td className="cell-translation">{primaryTranslation(w)}</td>
                     <td className="cell-lang">{primaryLang(w)}</td>
-                    <td className="cell-source">{w.word_type}</td>
+                    <td><span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span></td>
                     <td className="cell-source">{w.source ?? "—"}</td>
                     <td className="cell-date">{w.date ?? "—"}</td>
                     <td className="actions-col">
-                      <button className="row-btn edit-btn" onClick={() => startEdit(w)}>Edit</button>
-                      <button className="row-btn delete-btn" onClick={() => handleDelete(w.id)}>Delete</button>
+                      <div className="row-actions">
+                        <button className="row-btn edit-btn" onClick={() => startEdit(w)}>Edit</button>
+                        <button className="row-btn delete-btn" onClick={() => handleDelete(w.id)}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 )}
                 {expandedId === w.id && editingId !== w.id && (
                   <tr key={`${w.id}-detail`} className="detail-row">
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       <WordDetail wordId={w.id} />
                     </td>
                   </tr>
@@ -276,6 +400,30 @@ export default function WordsTable() {
           </tbody>
         </table>
       </div>
+
+      {proposals !== null && proposals.length === 0 && (
+        <div className="modal-overlay" onClick={() => setProposals(null)}>
+          <div className="modal-container enrichment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>No enrichments to propose</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: "var(--muted)", textAlign: "center", margin: "1rem 0" }}>
+                All words appear to have complete data, or the agent could not generate proposals.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="row-btn save-btn" onClick={() => setProposals(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {proposals !== null && proposals.length > 0 && (
+        <EnrichmentReview proposals={proposals} onDone={handleEnrichDone} />
+      )}
     </div>
   );
 }

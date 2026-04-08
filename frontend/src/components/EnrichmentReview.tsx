@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type ApplyResult,
   type EnrichmentProposal,
@@ -16,6 +16,13 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
   );
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState<ApplyResult | null>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   function toggleWord(wordId: string) {
     setSelected((prev) => {
@@ -49,66 +56,76 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
     }
   }
 
-  if (result) {
-    return (
-      <div className="enrichment-review">
-        <div className="enrichment-result">
-          <h3>
-            Applied {result.applied} of {result.total} enrichments
-          </h3>
-          <ul className="enrichment-result-list">
-            {result.details.map((d) => (
-              <li key={d.word_id} className={d.ok ? "ok" : "fail"}>
-                <strong>{d.german}</strong>
-                {d.ok ? ": " : " (failed): "}
-                {d.actions.join(", ") || "no changes"}
-              </li>
-            ))}
-          </ul>
-          <button className="row-btn save-btn" onClick={() => onDone(true)}>
-            Done
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="enrichment-review">
-      <div className="enrichment-header">
-        <h3>Proposed Enrichments ({proposals.length} words)</h3>
-        <div className="enrichment-header-actions">
-          <button className="row-btn edit-btn" onClick={toggleAll}>
-            {selected.size === proposals.length ? "Deselect All" : "Select All"}
-          </button>
-          <button
-            className="row-btn save-btn"
-            onClick={handleApply}
-            disabled={applying || selected.size === 0}
-          >
-            {applying
-              ? "Applying..."
-              : `Apply ${selected.size} Selected`}
-          </button>
-          <button
-            className="row-btn cancel-btn"
-            onClick={() => onDone(false)}
-            disabled={applying}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-
-      <div className="enrichment-cards">
-        {proposals.map((p) => (
-          <ProposalCard
-            key={p.word_id}
-            proposal={p}
-            checked={selected.has(p.word_id)}
-            onToggle={() => toggleWord(p.word_id)}
-          />
-        ))}
+    <div className="modal-overlay" onClick={() => !applying && onDone(false)}>
+      <div className="modal-container enrichment-modal" onClick={(e) => e.stopPropagation()}>
+        {result ? (
+          <>
+            <div className="modal-header">
+              <h3>Enrichment Complete</h3>
+            </div>
+            <div className="modal-body">
+              <div className="enrichment-result">
+                <p className="enrichment-result-summary">
+                  Applied {result.applied} of {result.total} enrichments
+                </p>
+                <ul className="enrichment-result-list">
+                  {result.details.map((d) => (
+                    <li key={d.word_id} className={d.ok ? "ok" : "fail"}>
+                      <strong>{d.german}</strong>
+                      {d.ok ? ": " : " (failed): "}
+                      {d.actions.join(", ") || "no changes"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="row-btn save-btn" onClick={() => onDone(true)}>
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="modal-header">
+              <h3>Proposed Enrichments ({proposals.length} words)</h3>
+              <div className="enrichment-header-actions">
+                <button className="row-btn edit-btn" onClick={toggleAll}>
+                  {selected.size === proposals.length ? "Deselect All" : "Select All"}
+                </button>
+              </div>
+            </div>
+            <div className="modal-body">
+              <div className="enrichment-cards">
+                {proposals.map((p) => (
+                  <ProposalCard
+                    key={p.word_id}
+                    proposal={p}
+                    checked={selected.has(p.word_id)}
+                    onToggle={() => toggleWord(p.word_id)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="row-btn save-btn"
+                onClick={handleApply}
+                disabled={applying || selected.size === 0}
+              >
+                {applying ? "Applying..." : `Apply ${selected.size} Selected`}
+              </button>
+              <button
+                className="row-btn cancel-btn"
+                onClick={() => onDone(false)}
+                disabled={applying}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

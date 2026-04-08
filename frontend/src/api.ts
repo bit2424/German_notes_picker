@@ -604,13 +604,18 @@ export interface ApplyResult {
 }
 
 export async function proposeEnrichments(
+  wordIds?: string[],
   limit = 10,
   filter = "all"
 ): Promise<{ proposals: EnrichmentProposal[] }> {
+  const payload: Record<string, unknown> = { limit, filter };
+  if (wordIds && wordIds.length > 0) {
+    payload.word_ids = wordIds;
+  }
   const res = await fetch(`${API_BASE}/enrich/words/propose`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ limit, filter }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Enrich propose failed: ${res.status}`);
   return res.json();
@@ -625,6 +630,34 @@ export async function applyEnrichments(
     body: JSON.stringify({ approved }),
   });
   if (!res.ok) throw new Error(`Enrich apply failed: ${res.status}`);
+  return res.json();
+}
+
+// ── Quiz generation ─────────────────────────────────
+
+export interface QuizQuestion {
+  id: string;
+  type: "flashcard" | "multiple_choice";
+  prompt: string;
+  german: string;
+  answer: string;
+  options: string[];
+  word_id: string;
+  hint: string;
+}
+
+export async function generateQuiz(params: {
+  prompt?: string;
+  tag_ids?: string[];
+  count?: number;
+  types?: string[];
+}): Promise<{ questions: QuizQuestion[] }> {
+  const res = await fetch(`${API_BASE}/quizzes/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Quiz generate failed: ${res.status}`);
   return res.json();
 }
 

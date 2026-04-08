@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import type { ChatMessage as ChatMessageType } from "../api";
 
 interface Props {
@@ -11,7 +12,11 @@ export default function ChatMessage({ message }: Props) {
     <div className={`chat-message ${isUser ? "user" : "assistant"}`}>
       <div className="message-label">{isUser ? "You" : "Agent"}</div>
       <div className="message-bubble">
-        <p>{message.content}</p>
+        {isUser ? (
+          <p>{message.content}</p>
+        ) : (
+          <div className="md"><ReactMarkdown>{message.content}</ReactMarkdown></div>
+        )}
         {message.attachments && message.attachments.length > 0 && (
           <div className="attachments">
             {message.attachments.map((a, i) => (

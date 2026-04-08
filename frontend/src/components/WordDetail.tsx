@@ -242,7 +242,9 @@ function VerbSection({ wordId, details, onChange }: {
           ))}
         </div>
       </div>
-      <button className="row-btn save-btn" onClick={save}>Save verb details</button>
+      <div className="detail-save-row">
+        <button className="row-btn save-btn" onClick={save}>Save verb details</button>
+      </div>
     </div>
   );
 }
@@ -277,7 +279,9 @@ function NounSection({ wordId, details, onChange }: {
           <input className="cell-input" value={draft.plural} onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))} />
         </label>
       </div>
-      <button className="row-btn save-btn" onClick={save}>Save noun details</button>
+      <div className="detail-save-row">
+        <button className="row-btn save-btn" onClick={save}>Save noun details</button>
+      </div>
     </div>
   );
 }
