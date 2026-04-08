@@ -12,6 +12,7 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 
 from german_notes.agents.enricher import apply_enrichments, run_enricher_propose
 from german_notes.agents.orchestrator import run_agent
+from german_notes.agents.quiz_agent import run_quiz_generate
 from german_notes.api.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -307,7 +308,7 @@ async def suggest_translations(body: dict = Body(...)):
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=2048,
             system=_SUGGEST_PROMPT,
             messages=[{"role": "user", "content": user_content}],
@@ -809,6 +810,40 @@ async def unlink_text_word(item_id: str):
     return {"ok": True}
 
 
+# ── Quiz generation ──────────────────────────────────
+
+
+@router.post("/quizzes/generate")
+async def generate_quiz(body: dict = Body(...)):
+    prompt = body.get("prompt")
+    tag_ids = body.get("tag_ids")
+    count = body.get("count", 10)
+    types = body.get("types", ["flashcard", "multiple_choice"])
+
+    if not prompt and not tag_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one of 'prompt' or 'tag_ids' is required",
+        )
+    if tag_ids is not None and not isinstance(tag_ids, list):
+        raise HTTPException(status_code=400, detail="tag_ids must be an array")
+    if not isinstance(count, int) or count < 1:
+        raise HTTPException(status_code=400, detail="count must be a positive integer")
+
+    try:
+        questions = await run_quiz_generate(
+            prompt=prompt,
+            tag_ids=tag_ids or None,
+            count=count,
+            types=types,
+        )
+    except Exception:
+        logger.exception("Quiz generator agent failed")
+        raise HTTPException(status_code=502, detail="Quiz generator agent failed")
+
+    return {"questions": questions}
+
+
 # ── Word enrichment (propose + apply) ────────────────
 
 
@@ -816,8 +851,13 @@ async def unlink_text_word(item_id: str):
 async def propose_word_enrichments(body: dict = Body(...)):
     limit = body.get("limit", 10)
     filter_type = body.get("filter", "all")
+    word_ids = body.get("word_ids")
+    if word_ids is not None and not isinstance(word_ids, list):
+        raise HTTPException(status_code=400, detail="word_ids must be an array")
     try:
-        proposals = await run_enricher_propose(limit=limit, filter_type=filter_type)
+        proposals = await run_enricher_propose(
+            limit=limit, filter_type=filter_type, word_ids=word_ids or None,
+        )
     except Exception:
         logger.exception("Enricher agent failed")
         raise HTTPException(status_code=502, detail="Enricher agent failed")
