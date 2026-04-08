@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from autogen_ext.models.anthropic import AnthropicChatCompletionClient
 
-MODEL_NAME = "claude-sonnet-4-20250514"
+MODEL_NAME = "claude-sonnet-4-6"
 
 
 def get_model_client() -> AnthropicChatCompletionClient:

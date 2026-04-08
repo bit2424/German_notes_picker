@@ -17,7 +17,7 @@ from german_notes.ocr.prompt import SYSTEM_PROMPT, USER_PROMPT
 
 _SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
-_MODEL = "claude-sonnet-4-20250514"
+_MODEL = "claude-sonnet-4-6"
 
 
 def _encode_image(path: Path) -> tuple[str, str]:
