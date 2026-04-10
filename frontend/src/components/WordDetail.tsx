@@ -204,14 +204,19 @@ function VerbSection({ wordId, details, onChange }: {
     present_wir: details?.present_wir ?? "",
     present_ihr: details?.present_ihr ?? "",
     present_sie: details?.present_sie ?? "",
+    case_rule: details?.case_rule ?? "",
+    is_reflexive: details?.is_reflexive ?? false,
   });
 
-  function setField(key: string, value: string) {
+  function setField(key: string, value: string | boolean) {
     setDraft((d) => ({ ...d, [key]: value }));
   }
 
   async function save() {
-    await upsertVerbDetails(wordId, draft);
+    await upsertVerbDetails(wordId, {
+      ...draft,
+      case_rule: (draft.case_rule || null) as VerbDetails["case_rule"],
+    });
     onChange();
   }
 
@@ -225,7 +230,23 @@ function VerbSection({ wordId, details, onChange }: {
         <label>Participle
           <input className="cell-input" value={draft.participle} onChange={(e) => setField("participle", e.target.value)} />
         </label>
+        <label>Case
+          <select className="cell-input cell-input-sm-select" value={draft.case_rule} onChange={(e) => setField("case_rule", e.target.value)}>
+            <option value="">—</option>
+            <option value="akkusativ">Akkusativ</option>
+            <option value="dativ">Dativ</option>
+            <option value="akkusativ+dativ">Akk + Dat</option>
+          </select>
+        </label>
       </div>
+      <label className="verb-reflexive-toggle">
+        <input
+          type="checkbox"
+          checked={draft.is_reflexive}
+          onChange={(e) => setField("is_reflexive", e.target.checked)}
+        />
+        <span>Reflexiv (sich)</span>
+      </label>
       <div className="conjugation-section">
         <span className="conjugation-label">Präsens</span>
         <div className="conjugation-grid">
@@ -242,9 +263,7 @@ function VerbSection({ wordId, details, onChange }: {
           ))}
         </div>
       </div>
-      <div className="detail-save-row">
-        <button className="row-btn save-btn" onClick={save}>Save verb details</button>
-      </div>
+      <button className="row-btn save-btn" onClick={save}>Save verb details</button>
     </div>
   );
 }
@@ -279,9 +298,7 @@ function NounSection({ wordId, details, onChange }: {
           <input className="cell-input" value={draft.plural} onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))} />
         </label>
       </div>
-      <div className="detail-save-row">
-        <button className="row-btn save-btn" onClick={save}>Save noun details</button>
-      </div>
+      <button className="row-btn save-btn" onClick={save}>Save noun details</button>
     </div>
   );
 }

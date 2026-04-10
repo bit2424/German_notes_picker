@@ -263,6 +263,8 @@ export interface VerbDetails {
   present_wir: string | null;
   present_ihr: string | null;
   present_sie: string | null;
+  case_rule: "akkusativ" | "dativ" | "akkusativ+dativ" | null;
+  is_reflexive: boolean;
 }
 
 export interface NounDetails {
@@ -355,7 +357,7 @@ export async function fetchTextDetail(id: string): Promise<TextDetails> {
 
 export async function upsertVerbDetails(
   wordId: string,
-  fields: Partial<Pick<VerbDetails, "infinitive" | "participle" | "present_ich" | "present_du" | "present_er" | "present_wir" | "present_ihr" | "present_sie">>
+  fields: Partial<Pick<VerbDetails, "infinitive" | "participle" | "present_ich" | "present_du" | "present_er" | "present_wir" | "present_ihr" | "present_sie" | "case_rule" | "is_reflexive">>
 ): Promise<VerbDetails> {
   const res = await fetch(`${API_BASE}/words/${wordId}/verb-details`, {
     method: "POST",

@@ -342,7 +342,7 @@ export default function WordsTable() {
                         onChange={() => toggleEnrichItem(w.id)}
                       />
                     </td>
-                    <td></td>
+                    <td className="expand-cell"></td>
                     <td>
                       <input className="cell-input" value={editDraft.german ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, german: e.target.value }))} onKeyDown={(e) => handleKeyDown(e, w.id)} autoFocus />
                     </td>
@@ -375,7 +375,7 @@ export default function WordsTable() {
                       <span className={`expand-arrow ${expandedId === w.id ? "open" : ""}`}>▶</span>
                     </td>
                     <td className="cell-german" onClick={() => toggleExpand(w.id)} style={{ cursor: "pointer" }}>{w.german}</td>
-                    <td className="cell-translation">{primaryTranslation(w)}</td>
+                    <td><div className="cell-translation-wrap">{primaryTranslation(w)}</div></td>
                     <td className="cell-lang">{primaryLang(w)}</td>
                     <td><span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span></td>
                     <td className="cell-source">{w.source ?? "—"}</td>

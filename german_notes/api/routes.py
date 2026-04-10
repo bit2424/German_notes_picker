@@ -308,7 +308,7 @@ async def suggest_translations(body: dict = Body(...)):
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-4-20250514",
             max_tokens=2048,
             system=_SUGGEST_PROMPT,
             messages=[{"role": "user", "content": user_content}],
@@ -523,7 +523,7 @@ async def create_word(fields: dict = Body(...)):
 async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
     sb = get_supabase()
     existing = sb.table("verb_details").select("id").eq("word_id", word_id).is_("deleted_at", "null").execute()
-    allowed_verb = ("infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie")
+    allowed_verb = ("infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie", "case_rule", "is_reflexive")
     row = {k: v for k, v in fields.items() if k in allowed_verb}
     if existing.data:
         result = sb.table("verb_details").update(row).eq("id", existing.data[0]["id"]).execute()
@@ -535,7 +535,7 @@ async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
 
 @router.patch("/verb-details/{item_id}")
 async def update_verb_details(item_id: str, fields: dict = Body(...)):
-    allowed = {"infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie"}
+    allowed = {"infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie", "case_rule", "is_reflexive"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
