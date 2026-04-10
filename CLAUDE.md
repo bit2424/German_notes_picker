@@ -67,7 +67,7 @@ All tables have RLS disabled (personal single-user app). Every table includes `c
 
 ### Word Detail Tables (type-specific grammar)
 
-- **`verb_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `infinitive` (text), `participle` (text), `present_ich` (text), `present_du` (text), `present_er` (text), `present_wir` (text), `present_ihr` (text), `present_sie` (text), timestamps. 1:1 with words where `word_type='verb'`. The six `present_*` columns store Präsens conjugation by pronoun (ich, du, er/sie/es, wir, ihr, sie/Sie).
+- **`verb_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `infinitive` (text), `participle` (text), `present_ich` (text), `present_du` (text), `present_er` (text), `present_wir` (text), `present_ihr` (text), `present_sie` (text), `case_rule` (text: "akkusativ"/"dativ"/"akkusativ+dativ", nullable), `is_reflexive` (boolean, default false), timestamps. 1:1 with words where `word_type='verb'`. The six `present_*` columns store Präsens conjugation by pronoun (ich, du, er/sie/es, wir, ihr, sie/Sie).
 
 - **`noun_details`** -- `id` (uuid PK), `word_id` (uuid FK → words, UNIQUE), `article` (text: "der"/"die"/"das"), `plural` (text), timestamps. 1:1 with words where `word_type='noun'`.
 

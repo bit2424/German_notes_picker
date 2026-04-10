@@ -4,6 +4,29 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-07 -- Verb case rule and reflexive flag
+
+### What was done
+
+**Database migration** (run manually in Supabase SQL Editor)
+- Added `case_rule text` and `is_reflexive boolean NOT NULL DEFAULT false` columns to `verb_details`.
+- SQL: `ALTER TABLE verb_details ADD COLUMN case_rule text, ADD COLUMN is_reflexive boolean NOT NULL DEFAULT false;`
+
+**Backend (`api/routes.py`)**
+- Updated `upsert_verb_details` and `update_verb_details` allowed fields to include `case_rule` and `is_reflexive`.
+
+**Frontend (`api.ts`)**
+- Added `case_rule` and `is_reflexive` to `VerbDetails` interface and `upsertVerbDetails` signature.
+
+**Frontend (`WordDetail.tsx`)**
+- Added a "Case" dropdown (Akkusativ / Dativ / Akk + Dat) to the verb details type-fields row.
+- Added a "Reflexiv (sich)" checkbox toggle.
+
+**Frontend (`App.css`)**
+- Added `.verb-reflexive-toggle` styles.
+
+---
+
 ## 2026-04-07 -- Verb present tense conjugation grid
 
 ### What was done
