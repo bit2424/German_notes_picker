@@ -1,14 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   type WordDetails,
-  type Translation,
+  type WordPracticeStats,
   type VerbDetails,
   type NounDetails,
   type AdjDeclension,
   fetchWordDetail,
+  fetchWordPracticeStats,
   addTranslation,
-  updateTranslation,
-  deleteTranslation,
   upsertVerbDetails,
   upsertNounDetails,
   createAdjDeclension,
@@ -18,6 +17,7 @@ import {
 import TagPills from "./TagPills";
 import ExplanationsList from "./ExplanationsList";
 import CorrectionsList from "./CorrectionsList";
+import TranslationsSection from "./TranslationsSection";
 
 const CASES = ["nominativ", "akkusativ", "dativ", "genitiv"] as const;
 const GENDERS = ["maskulin", "feminin", "neutrum", "plural"] as const;
@@ -29,12 +29,16 @@ interface Props {
 export default function WordDetail({ wordId }: Props) {
   const [data, setData] = useState<WordDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [practiceStats, setPracticeStats] = useState<WordPracticeStats | null>(null);
 
   const load = useCallback(() => {
     fetchWordDetail(wordId)
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetchWordPracticeStats(wordId)
+      .then(setPracticeStats)
+      .catch(() => {});
   }, [wordId]);
 
   useEffect(() => {
@@ -47,7 +51,40 @@ export default function WordDetail({ wordId }: Props) {
   return (
     <div className="detail-panel">
       <WordTypeSelector word={data} onChange={load} />
-      <TranslationsSection wordId={wordId} translations={data.translations} onChange={load} />
+      {practiceStats && practiceStats.total_attempts > 0 && (
+        <div className="detail-section">
+          <h4 className="detail-section-title">Practice</h4>
+          <div className="practice-stats-row">
+            <div className="practice-stat">
+              <span className="practice-stat-value">{practiceStats.total_attempts}</span>
+              <span className="practice-stat-label">Practiced</span>
+            </div>
+            <div className="practice-stat">
+              <span className="practice-stat-value">{practiceStats.correct}</span>
+              <span className="practice-stat-label">Correct</span>
+            </div>
+            <div className="practice-stat">
+              <span className="practice-stat-value">
+                {practiceStats.accuracy != null ? `${Math.round(practiceStats.accuracy * 100)}%` : "—"}
+              </span>
+              <span className="practice-stat-label">Accuracy</span>
+            </div>
+            {practiceStats.last_practiced && (
+              <div className="practice-stat">
+                <span className="practice-stat-value">
+                  {new Date(practiceStats.last_practiced).toLocaleDateString()}
+                </span>
+                <span className="practice-stat-label">Last</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      <TranslationsSection
+        translations={data.translations}
+        onAdd={(lang, text) => addTranslation(wordId, lang, text)}
+        onChange={load}
+      />
       {data.word_type === "verb" && (
         <VerbSection wordId={wordId} details={data.verb_details ?? null} onChange={load} />
       )}
@@ -110,71 +147,6 @@ function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () 
       </select>
       <button className="row-btn save-btn" onClick={save}>Save</button>
       <button className="row-btn cancel-btn" onClick={() => { setType(word.word_type); setEditing(false); }}>Cancel</button>
-    </div>
-  );
-}
-
-function TranslationsSection({ wordId, translations, onChange }: {
-  wordId: string;
-  translations: Translation[];
-  onChange: () => void;
-}) {
-  const [newLang, setNewLang] = useState<"es" | "en">("es");
-  const [newText, setNewText] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-
-  async function handleAdd() {
-    if (!newText.trim()) return;
-    await addTranslation(wordId, newLang, newText.trim());
-    setNewText("");
-    onChange();
-  }
-
-  async function saveEdit(id: string) {
-    if (!editText.trim()) return;
-    await updateTranslation(id, { translation: editText.trim() });
-    setEditingId(null);
-    onChange();
-  }
-
-  async function handleDelete(id: string) {
-    await deleteTranslation(id);
-    onChange();
-  }
-
-  return (
-    <div className="detail-section">
-      <h4 className="detail-section-title">Translations</h4>
-      {translations.map((t) => (
-        <div key={t.id} className="translation-row">
-          <span className="translation-lang">{t.language.toUpperCase()}</span>
-          {editingId === t.id ? (
-            <>
-              <input className="cell-input" value={editText} onChange={(e) => setEditText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") saveEdit(t.id); if (e.key === "Escape") setEditingId(null); }}
-                autoFocus />
-              <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>Save</button>
-              <button className="row-btn cancel-btn" onClick={() => setEditingId(null)}>Cancel</button>
-            </>
-          ) : (
-            <>
-              <span className="translation-text">{t.translation}</span>
-              <button className="row-btn edit-btn" onClick={() => { setEditingId(t.id); setEditText(t.translation); }}>Edit</button>
-              <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>Delete</button>
-            </>
-          )}
-        </div>
-      ))}
-      <div className="translation-add-row">
-        <select className="cell-input cell-input-sm-select" value={newLang} onChange={(e) => setNewLang(e.target.value as "es" | "en")}>
-          <option value="es">ES</option>
-          <option value="en">EN</option>
-        </select>
-        <input className="cell-input" value={newText} placeholder="New translation…" onChange={(e) => setNewText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }} />
-        {newText.trim() && <button className="row-btn save-btn" onClick={handleAdd}>Add</button>}
-      </div>
     </div>
   );
 }
@@ -288,7 +260,7 @@ function NounSection({ wordId, details, onChange }: {
       <h4 className="detail-section-title">Noun Details</h4>
       <div className="type-fields">
         <label>Article
-          <select className="cell-input cell-input-sm-select" value={draft.article} onChange={(e) => setDraft((d) => ({ ...d, article: e.target.value }))}>
+          <select className="cell-input cell-input-sm-select" value={draft.article} onChange={(e) => setDraft((d) => ({ ...d, article: e.target.value as "der" | "die" | "das" }))}>
             <option value="der">der</option>
             <option value="die">die</option>
             <option value="das">das</option>

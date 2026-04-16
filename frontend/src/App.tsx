@@ -3,6 +3,7 @@ import {
   type Chat,
   type ChatMessage as ChatMessageType,
   type SuggestionResponse,
+  type IntakeProposal,
   type ConfirmedWord,
   createChat,
   fetchChats,
@@ -16,6 +17,7 @@ import {
 import ChatInput from "./components/ChatInput";
 import ChatMessage from "./components/ChatMessage";
 import ChatList from "./components/ChatList";
+import IntakeReview from "./components/IntakeReview";
 import TranslationSuggestionCard from "./components/TranslationSuggestionCard";
 import LibraryView from "./components/LibraryView";
 import QuizletView from "./components/QuizletView";
@@ -55,8 +57,11 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [pendingSuggestions, setPendingSuggestions] =
     useState<SuggestionResponse | null>(null);
+  const [pendingIntakeProposals, setPendingIntakeProposals] =
+    useState<IntakeProposal[] | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,7 +126,7 @@ export default function App() {
     setActiveView("chat");
   }
 
-  async function handleSend(text: string, files: File[]) {
+  async function handleSend(text: string, files: File[], enrich: boolean = false) {
     if (!activeChatId) return;
 
     const wordList = files.length === 0 ? detectWordList(text) : null;
@@ -155,14 +160,18 @@ export default function App() {
     }
 
     try {
-      const { reply } = await sendMessage(activeChatId, text, files);
+      if (enrich) setEnriching(true);
+      const response = await sendMessage(activeChatId, text, files, enrich);
       const assistantMsg: ChatMessageType = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: reply,
+        content: response.reply,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      if (response.intake_proposals && response.intake_proposals.length > 0) {
+        setPendingIntakeProposals(response.intake_proposals);
+      }
     } catch {
       const errorMsg: ChatMessageType = {
         id: crypto.randomUUID(),
@@ -173,6 +182,7 @@ export default function App() {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setLoading(false);
+      setEnriching(false);
     }
   }
 
@@ -213,6 +223,27 @@ export default function App() {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, cancelMsg]);
+  }
+
+  function handleIntakeReviewDone(applied: boolean) {
+    setPendingIntakeProposals(null);
+    if (applied) {
+      const msg: ChatMessageType = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Words saved successfully!",
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, msg]);
+    } else {
+      const msg: ChatMessageType = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Word proposals dismissed.",
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, msg]);
+    }
   }
 
   const activeChat = chats.find((c) => c.id === activeChatId) ?? null;
@@ -302,13 +333,26 @@ export default function App() {
               {loading && (
                 <div className="chat-message assistant">
                   <div className="message-label">Agent</div>
-                  <div className="message-bubble typing">
-                    <span></span><span></span><span></span>
-                  </div>
+                  {enriching ? (
+                    <div className="message-bubble enriching-indicator">
+                      <span className="enriching-spinner" />
+                      Enriching vocabulary...
+                    </div>
+                  ) : (
+                    <div className="message-bubble typing">
+                      <span></span><span></span><span></span>
+                    </div>
+                  )}
                 </div>
               )}
               <div ref={bottomRef} />
             </main>
+            {pendingIntakeProposals && pendingIntakeProposals.length > 0 && (
+              <IntakeReview
+                proposals={pendingIntakeProposals}
+                onDone={handleIntakeReviewDone}
+              />
+            )}
             {activeChatId && <ChatInput onSend={handleSend} disabled={loading} />}
           </>
         ) : activeView === "library" ? (

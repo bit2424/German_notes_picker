@@ -6,10 +6,12 @@ import {
   fetchWords,
   linkTextWord,
   unlinkTextWord,
+  addTextTranslation,
 } from "../api";
 import TagPills from "./TagPills";
 import ExplanationsList from "./ExplanationsList";
 import CorrectionsList from "./CorrectionsList";
+import TranslationsSection from "./TranslationsSection";
 
 interface Props {
   textId: string;
@@ -35,6 +37,11 @@ export default function TextDetail({ textId }: Props) {
 
   return (
     <div className="detail-panel">
+      <TranslationsSection
+        translations={data.translations ?? []}
+        onAdd={(lang, text) => addTextTranslation(textId, lang, text)}
+        onChange={load}
+      />
       <div className="detail-section">
         <h4 className="detail-section-title">Explanations</h4>
         <ExplanationsList

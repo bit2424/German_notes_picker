@@ -1,17 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { type Tag, fetchTags, createTag, deleteTag } from "../api";
+import { type Tag, type TagPracticeStats, fetchTags, fetchTagPracticeStats, createTag, deleteTag } from "../api";
 
 export default function TagsTable() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [newName, setNewName] = useState("");
+  const [tagStats, setTagStats] = useState<Record<string, TagPracticeStats>>({});
 
   useEffect(() => {
     fetchTags()
       .then((d) => setTags(d.tags))
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetchTagPracticeStats()
+      .then((d) => {
+        const map: Record<string, TagPracticeStats> = {};
+        for (const s of d.tags) map[s.tag_id] = s;
+        setTagStats(map);
+      })
+      .catch(() => {});
   }, []);
 
   const filtered = useMemo(() => {
@@ -66,18 +74,35 @@ export default function TagsTable() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Practice</th>
               <th className="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t) => (
-              <tr key={t.id}>
-                <td>{t.name}</td>
-                <td className="actions-col">
-                  <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
+            {filtered.map((t) => {
+              const stats = tagStats[t.id];
+              return (
+                <tr key={t.id}>
+                  <td>{t.name}</td>
+                  <td>
+                    {stats ? (
+                      <div className="tag-stats-cols">
+                        <span>{stats.total_attempts} practiced</span>
+                        <span>{stats.correct} correct</span>
+                        {stats.accuracy != null && (
+                          <span>{Math.round(stats.accuracy * 100)}%</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>—</span>
+                    )}
+                  </td>
+                  <td className="actions-col">
+                    <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>Delete</button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

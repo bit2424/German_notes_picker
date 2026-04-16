@@ -10,7 +10,8 @@ export interface ChatMessage {
 
 export interface Translation {
   id: string;
-  word_id: string;
+  word_id?: string | null;
+  text_id?: string | null;
   language: "es" | "en";
   translation: string;
   created_at: string;
@@ -35,6 +36,7 @@ export interface TextItem {
   date: string | null;
   sender: string | null;
   created_at: string;
+  translations?: Translation[];
 }
 
 export interface Chat {
@@ -89,10 +91,12 @@ export async function deleteChat(id: string): Promise<void> {
 export async function sendMessage(
   chatId: string,
   text: string,
-  files: File[]
-): Promise<{ reply: string }> {
+  files: File[],
+  enrich: boolean = false
+): Promise<{ reply: string; intake_proposals?: IntakeProposal[] }> {
   const form = new FormData();
   form.append("message", text);
+  form.append("enrich", enrich ? "true" : "false");
   for (const f of files) {
     form.append("files", f);
   }
@@ -325,6 +329,7 @@ export interface WordDetails extends WordItem {
 }
 
 export interface TextDetails extends TextItem {
+  translations: Translation[];
   explanations: Explanation[];
   tags: Tag[];
   corrections: Correction[];
@@ -635,6 +640,53 @@ export async function applyEnrichments(
   return res.json();
 }
 
+// ── Word intake (propose from chat + apply) ─────────
+
+export interface IntakeProposal {
+  german: string;
+  word_type: string;
+  source?: string;
+  translations?: { language: string; translation: string }[];
+  verb_details?: {
+    infinitive?: string;
+    participle?: string;
+    present_ich?: string;
+    present_du?: string;
+    present_er?: string;
+    present_wir?: string;
+    present_ihr?: string;
+    present_sie?: string;
+    case_rule?: string;
+    is_reflexive?: string;
+  };
+  noun_details?: { article?: string; plural?: string };
+  tags?: string[];
+  explanation?: string;
+}
+
+export interface IntakeApplyResult {
+  applied: number;
+  total: number;
+  details: {
+    word_id?: string;
+    german: string;
+    word_type: string;
+    ok: boolean;
+  }[];
+}
+
+export async function applyIntake(
+  approved: IntakeProposal[]
+): Promise<IntakeApplyResult> {
+  const res = await fetch(`${API_BASE}/intake/apply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ approved }),
+  });
+  if (!res.ok) throw new Error(`Intake apply failed: ${res.status}`);
+  return res.json();
+}
+
 // ── Quiz generation ─────────────────────────────────
 
 export interface QuizQuestion {
@@ -663,6 +715,139 @@ export async function generateQuiz(params: {
   return res.json();
 }
 
+// ── Saved quizlets ──────────────────────────────────
+
+export interface SavedQuizlet {
+  id: string;
+  name: string;
+  prompt: string;
+  pool_count: number;
+  default_question_count: number;
+  types: string;
+  source: string;
+  created_at: string;
+  tags?: Tag[];
+  runs?: QuizRunSummary[];
+  total_runs?: number;
+  questions?: QuizQuestion[];
+  question_count?: number;
+}
+
+export interface QuizRunSummary {
+  id: string;
+  score_correct: number | null;
+  score_total: number | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface QuizRun {
+  id: string;
+  quizlet_id: string;
+  question_count: number;
+  started_at: string;
+  completed_at: string | null;
+  score_correct: number | null;
+  score_total: number | null;
+  questions: QuizQuestion[];
+}
+
+export interface ReviewAnswer {
+  question_id: string;
+  word_id?: string;
+  correct: boolean;
+  question_type: string;
+}
+
+export interface WordPracticeStats {
+  word_id: string;
+  total_attempts: number;
+  correct: number;
+  accuracy: number | null;
+  last_practiced: string | null;
+}
+
+export interface TagPracticeStats {
+  tag_id: string;
+  tag_name: string;
+  total_attempts: number;
+  correct: number;
+  accuracy: number | null;
+}
+
+export async function generateAndSaveQuizlet(params: {
+  prompt?: string;
+  tag_ids?: string[];
+  pool_count?: number;
+  question_count?: number;
+  types?: string[];
+  name?: string;
+}): Promise<SavedQuizlet> {
+  const res = await fetch(`${API_BASE}/quizlets/generate-and-save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error(`Generate and save failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchQuizlets(limit = 50): Promise<{ quizlets: SavedQuizlet[] }> {
+  const res = await fetch(`${API_BASE}/quizlets?limit=${limit}`);
+  if (!res.ok) throw new Error(`Quizlets fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchQuizletDetail(id: string): Promise<SavedQuizlet> {
+  const res = await fetch(`${API_BASE}/quizlets/${id}`);
+  if (!res.ok) throw new Error(`Quizlet detail failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteQuizlet(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/quizlets/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Quizlet delete failed: ${res.status}`);
+}
+
+export async function startQuizRun(quizletId: string, questionCount?: number): Promise<QuizRun> {
+  const res = await fetch(`${API_BASE}/quizlets/${quizletId}/runs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question_count: questionCount }),
+  });
+  if (!res.ok) throw new Error(`Start run failed: ${res.status}`);
+  return res.json();
+}
+
+export async function completeQuizRun(runId: string, answers: ReviewAnswer[]): Promise<QuizRun> {
+  const res = await fetch(`${API_BASE}/quiz-runs/${runId}/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answers }),
+  });
+  if (!res.ok) throw new Error(`Complete run failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchWordPracticeStats(wordId: string): Promise<WordPracticeStats> {
+  const res = await fetch(`${API_BASE}/stats/words/${wordId}/practice`);
+  if (!res.ok) throw new Error(`Word practice stats failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchAllWordPracticeStats(): Promise<Record<string, WordPracticeStats>> {
+  const res = await fetch(`${API_BASE}/stats/words/practice`);
+  if (!res.ok) throw new Error(`Bulk word practice stats failed: ${res.status}`);
+  const data = await res.json();
+  return data.stats;
+}
+
+export async function fetchTagPracticeStats(): Promise<{ tags: TagPracticeStats[] }> {
+  const res = await fetch(`${API_BASE}/stats/tags`);
+  if (!res.ok) throw new Error(`Tag practice stats failed: ${res.status}`);
+  return res.json();
+}
+
 // ── Translation add/delete ──────────────────────────
 
 export async function addTranslation(wordId: string, language: string, translation: string): Promise<Translation> {
@@ -672,6 +857,16 @@ export async function addTranslation(wordId: string, language: string, translati
     body: JSON.stringify({ language, translation }),
   });
   if (!res.ok) throw new Error(`Add translation failed: ${res.status}`);
+  return res.json();
+}
+
+export async function addTextTranslation(textId: string, language: string, translation: string): Promise<Translation> {
+  const res = await fetch(`${API_BASE}/texts/${textId}/translations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ language, translation }),
+  });
+  if (!res.ok) throw new Error(`Add text translation failed: ${res.status}`);
   return res.json();
 }
 
