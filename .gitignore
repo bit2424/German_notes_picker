@@ -29,3 +29,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Cursor project-level MCP config (contains service role keys)
+.cursor/mcp.json
