@@ -4,171 +4,12 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
-## 2026-04-07 -- Verb case rule and reflexive flag
-
-### What was done
-
-**Database migration** (run manually in Supabase SQL Editor)
-- Added `case_rule text` and `is_reflexive boolean NOT NULL DEFAULT false` columns to `verb_details`.
-- SQL: `ALTER TABLE verb_details ADD COLUMN case_rule text, ADD COLUMN is_reflexive boolean NOT NULL DEFAULT false;`
-
-**Backend (`api/routes.py`)**
-- Updated `upsert_verb_details` and `update_verb_details` allowed fields to include `case_rule` and `is_reflexive`.
-
-**Frontend (`api.ts`)**
-- Added `case_rule` and `is_reflexive` to `VerbDetails` interface and `upsertVerbDetails` signature.
-
-**Frontend (`WordDetail.tsx`)**
-- Added a "Case" dropdown (Akkusativ / Dativ / Akk + Dat) to the verb details type-fields row.
-- Added a "Reflexiv (sich)" checkbox toggle.
-
-**Frontend (`App.css`)**
-- Added `.verb-reflexive-toggle` styles.
-
----
-
-## 2026-04-07 -- Verb present tense conjugation grid
-
-### What was done
-
-**Database migration**
-- Replaced single `present` text column in `verb_details` with 6 pronoun-specific columns: `present_ich`, `present_du`, `present_er`, `present_wir`, `present_ihr`, `present_sie`.
-- SQL: `ALTER TABLE verb_details DROP COLUMN present; ALTER TABLE verb_details ADD COLUMN present_ich text, ADD COLUMN present_du text, ADD COLUMN present_er text, ADD COLUMN present_wir text, ADD COLUMN present_ihr text, ADD COLUMN present_sie text;`
-
-**Backend (`api/routes.py`)**
-- Updated `upsert_verb_details` and `update_verb_details` to accept the 6 new conjugation fields instead of the old `present` field.
-
-**Frontend (`api.ts`)**
-- Updated `VerbDetails` interface: removed `present`, added `present_ich`, `present_du`, `present_er`, `present_wir`, `present_ihr`, `present_sie`.
-- Updated `upsertVerbDetails` function signature accordingly.
-
-**Frontend (`WordDetail.tsx`)**
-- Replaced single "Present" text input with a 2-column conjugation grid showing all 6 pronoun forms (ich, du, er/sie/es, wir, ihr, sie/Sie) under a "Präsens" label.
-
-**Frontend (`App.css`)**
-- Added styles for `.conjugation-section`, `.conjugation-grid`, `.conjugation-row`, `.conjugation-pronoun`, `.conjugation-input`.
-
----
-
-## 2026-04-07 -- Library entity management: full CRUD for all schema entities
-
-### What was done
-
-**Backend (`api/routes.py` -- 25+ new endpoints)**
-- `GET /words/{id}` -- full detail fetch with nested translations, verb/noun/adj details, explanations (with tags), word tags, corrections.
-- `GET /texts/{id}` -- full detail fetch with nested explanations (with tags), text tags, corrections, text-word links (with word names).
-- `POST /words`, `POST /texts` -- manual creation endpoints.
-- CRUD for verb details (`POST /words/{id}/verb-details` upsert, `PATCH`, `DELETE`).
-- CRUD for noun details (same pattern).
-- CRUD for adjective declensions (`POST /words/{id}/adjective-declensions`, `PATCH`, `DELETE`).
-- CRUD for explanations (polymorphic: `POST /explanations`, `PATCH`, `DELETE`).
-- Tags management: `GET /tags`, `POST /tags`, `DELETE /tags/{id}`.
-- Tag assignments: `POST/DELETE /words/{id}/tags/{tag_id}`, same for texts and explanations.
-- Corrections CRUD: `POST /corrections`, `PATCH /corrections/{id}` (status management), `DELETE`.
-- Text-word links: `POST /texts/{id}/words`, `DELETE /text-words/{id}`.
-
-**Frontend API layer (`api.ts`)**
-- New TypeScript interfaces: `VerbDetails`, `NounDetails`, `AdjDeclension`, `Tag`, `Explanation`, `Correction`, `TextWordLink`, `WordDetails`, `TextDetails`.
-- Fetch functions for all new endpoints: `fetchWordDetail`, `fetchTextDetail`, `createWord`, `createText`, `upsertVerbDetails`, `upsertNounDetails`, `createAdjDeclension`, `updateAdjDeclension`, `createExplanation`, `updateExplanation`, `deleteExplanation`, `fetchTags`, `createTag`, `deleteTag`, `addWordTag`, `removeWordTag`, `addTextTag`, `removeTextTag`, `addExplanationTag`, `removeExplanationTag`, `createCorrection`, `updateCorrection`, `deleteCorrection`, `linkTextWord`, `unlinkTextWord`, `addTranslation`, `deleteTranslation`.
-
-**Frontend components (7 new, 3 updated)**
-- New `TagPills.tsx` -- reusable tag pill row with add/remove, autocomplete dropdown, and inline tag creation.
-- New `ExplanationsList.tsx` -- reusable explanations list with inline edit, delete, add form, and per-explanation tag pills.
-- New `CorrectionsList.tsx` -- corrections list with original→corrected diff display, accept/reject buttons, status badges, add form.
-- New `WordDetail.tsx` -- expanded detail panel for words: word type selector, translations section (add/edit/delete), verb/noun/adjective details, explanations, tags, corrections.
-- New `TextDetail.tsx` -- expanded detail panel for texts: explanations, tags, corrections, linked words with search-and-link.
-- New `TagsTable.tsx` -- global tag management tab: create, search, delete tags.
-- Updated `WordsTable.tsx` -- expand/collapse rows (▶ arrow), manual "+ Add" button, renders WordDetail in expanded rows.
-- Updated `TextsTable.tsx` -- same expand/collapse and "+ Add" pattern, renders TextDetail.
-- Updated `LibraryView.tsx` -- added third "Tags" tab.
-
-**CSS (`App.css`)**
-- New styles for: expand/collapse arrows, detail panel (left accent border), detail sections, create row, translation rows, type detail fields, tag pills (with dropdown), explanation cards, correction cards (diff display, status badges), declension grid (4×4), linked word rows.
-
-**Documentation**
-- Updated `CLAUDE.md` code map (backend and frontend) to list all new endpoints and components.
-- Updated `CHANGELOG.md` with this entry.
-
----
-
-## 2026-04-07 -- Multi-chat sessions with named conversations
-
-### What was done
-
-**Database (3 Supabase migrations)**
-- Created `chats` table with `name`, `description`, and lifecycle timestamps.
-- Created `chat_tags` junction table for grouping chats via the shared `tags` system.
-- Added `chat_id` (FK → chats, NOT NULL) to `chat_messages`. Migrated all 20 existing messages to a default "First Chat".
-
-**Backend**
-- New endpoints: `GET/POST/PATCH/DELETE /api/chats` for chat CRUD.
-- Replaced `/api/chat` and `/api/chat/history` with `/api/chats/{chat_id}/messages` (GET and POST). All messages are now scoped to a specific chat.
-- Sending a message touches the chat's `updated_at` so recently active chats sort first.
-
-**Frontend**
-- New `ChatList` component in the sidebar: shows all chats sorted by recency, with inline rename (pencil icon) and delete (× icon).
-- "+" button to create a new chat. Large "New Chat" CTA when no chat is selected.
-- Chat header shows the active chat's name above the message area.
-- `App.tsx` manages `chats[]`, `activeChatId` state. Switching chats loads that chat's message history.
-- `sendMessage()` and `fetchHistory()` now take `chatId` as the first argument.
-
-### SQL migrations applied
-1. `create_chats_table` -- chats + chat_tags + disable RLS
-2. `add_chat_id_to_messages` -- add nullable chat_id FK + index
-3. `make_chat_id_not_null` -- enforce NOT NULL after data migration
-
----
-
-## 2026-04-07 -- Schema redesign: words, texts, translations, explanations, tags, corrections
-
-### What was done
-
-**Database schema redesign (6 Supabase migrations)**
-- Replaced `vocabulary` and `sentences` tables with a richer relational schema:
-  - `words` -- German words with `word_type` discriminator (verb/noun/adjective/other).
-  - `verb_details`, `noun_details`, `adjective_declensions` -- type-specific grammar tables (1:1 or 1:N to words).
-  - `translations` -- separate table for word translations (1:N, supports multiple languages).
-  - `texts` -- replaces `sentences`, more general (sentence/phrase/paragraph).
-  - `text_words` -- M:N junction linking words to texts (with position).
-  - `explanations` -- polymorphic table (entity_type + entity_id) for attaching explanations to any entity.
-  - `tags` + junction tables (`word_tags`, `text_tags`, `explanation_tags`) for categorization.
-  - `corrections` -- tracks original vs. corrected German text with status workflow (pending/accepted/rejected).
-- All tables follow new conventions: `uuid` PK, `created_at`/`updated_at`/`deleted_at` timestamps, soft deletes, FK indexes.
-- Created shared `update_updated_at()` trigger function reused across all tables.
-- Added `updated_at`/`deleted_at` to `chat_messages` for consistency.
-- Disabled RLS on all new tables (personal single-user app).
-- Migrated existing data: 11 vocabulary rows → words + translations, 2 sentences → texts.
-- Dropped old `vocabulary` and `sentences` tables.
-
-**Backend updates**
-- `agents/tools.py` -- storage functions now insert into `words` + `translations` (two-step) and `texts`. Renamed `store_vocabulary` → `store_words`, `store_sentences` → `store_texts`.
-- `agents/orchestrator.py` -- updated imports and system prompt for new tool names.
-- `api/routes.py` -- new endpoints: `GET/PATCH/DELETE /api/words` (with nested translations via Supabase join), `POST /api/words/{id}/translations`, `PATCH/DELETE /api/translations/{id}`, `GET/PATCH/DELETE /api/texts`. All deletes are now soft deletes. All queries filter `deleted_at IS NULL`.
-
-**Frontend updates**
-- `api.ts` -- new TypeScript interfaces (`WordItem`, `TextItem`, `Translation`) and API functions matching new endpoints.
-- Renamed `VocabularyTable.tsx` → `WordsTable.tsx`, `SentencesTable.tsx` → `TextsTable.tsx`.
-- `WordsTable` displays nested translations from the joined response and supports editing both word and translation in one flow.
-- `LibraryView` tabs renamed from "Vocabulary"/"Sentences" to "Words"/"Texts".
-
-**Documentation**
-- `CLAUDE.md` -- added "Database Conventions" section (UUID PKs, timestamps, soft deletes, FK indexing, naming, migration discipline, new-table template). Updated schema documentation to reflect all 14 tables.
-
-### SQL migrations applied (in order)
-1. `create_trigger_function_and_core_tables` -- trigger fn, words, texts
-2. `create_word_detail_tables` -- verb_details, noun_details, adjective_declensions
-3. `create_translations_and_text_words` -- translations, text_words
-4. `create_explanations_tags_corrections` -- explanations, tags, junction tables, corrections
-5. `update_chat_messages_drop_legacy_tables` -- add lifecycle columns to chat_messages, drop old tables
-6. `disable_rls_on_new_tables` -- disable RLS on all 13 new tables
-
----
-
 ## 2026-04-06 -- Migrated agent to AutoGen + unified classification pipeline
 
 ### What was done
 
 **Agent framework migration**
+
 - Replaced the hand-rolled Claude tool-use loop (`api/agent.py`) with Microsoft AutoGen.
 - New `german_notes/agents/` package:
   - `config.py` -- factory for `AnthropicChatCompletionClient` (Claude claude-sonnet-4-20250514).
@@ -179,11 +20,13 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 - Deleted the old `api/agent.py`.
 
 **Unified classification pipeline**
+
 - OCR module refactored: `ocr/prompt.py` now asks Claude Vision to extract raw text lines only (returns `{"lines": [...]}`). `ocr/client.py` returns `list[str]` instead of classified objects.
 - All classification (vocab pair vs. sentence) now goes through `extractor/classifier.py` as the single source of truth, regardless of whether the source is OCR or WhatsApp.
 - `ocr/cli.py` updated to run OCR lines through the classifier before writing CSV.
 
 **Chat history handling**
+
 - History from Supabase is converted to AutoGen agent state format and injected via `load_state()`.
 - Consecutive same-role messages are merged, empty messages are skipped, and trailing unanswered user messages are trimmed to satisfy Anthropic's strict alternation requirement.
 
@@ -205,11 +48,13 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 ### What was done
 
 **Database (Supabase)**
+
 - Created Supabase project "German Second brain" (ref: `xbxaujxiltreasmmgewi`, region: eu-west-1).
 - Applied migration `create_initial_tables`: three tables (`vocabulary`, `sentences`, `chat_messages`) with UUID PKs, timestamps, and descending indexes on `created_at`.
 - Applied migration `disable_rls_for_personal_use`: RLS disabled on all three tables since this is a single-user personal app.
 
 **Backend (FastAPI + Claude agent)**
+
 - Created `german_notes/api/` package with 5 modules:
   - `supabase_client.py` -- singleton Supabase client via `lru_cache`.
   - `tools.py` -- 4 tool handlers: `store_vocabulary`, `store_sentences`, `extract_from_image`, `parse_whatsapp_export`. The latter two reuse the existing `ocr/client.py` and `extractor/parser.py` + `classifier.py`.
@@ -220,12 +65,14 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 - Ran `poetry lock && poetry install` -- 47 new packages installed.
 
 **Frontend (React + Vite)**
+
 - Scaffolded with `npm create vite@latest frontend -- --template react-ts`.
 - Built chat UI: `App.tsx` (message state, history fetch, send handler), `ChatInput.tsx` (text input + file upload with previews), `ChatMessage.tsx` (user/assistant bubbles).
 - Styled with CSS variables, supports dark/light mode via `prefers-color-scheme`.
 - API client (`api.ts`) hardcoded to `http://localhost:8001/api`.
 
 **Config & docs**
+
 - Updated `.env.example` with `SUPABASE_URL` and `SUPABASE_KEY`.
 - Updated `.gitignore` with `node_modules/` and `frontend/dist/`.
 - Rewrote `README.md` to document the new agent architecture, setup, and usage.
@@ -237,7 +84,7 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 - `GET /api/chat/history` returns stored messages -- insert + query pipeline confirmed.
 - `POST /api/chat` stores user message in `chat_messages`, then calls the agent. With a valid API key, the full tool-use loop executes.
 - Frontend renders on port 5174 (5173 was occupied) with header, empty state, input bar, and file upload button.
-- CORS headers present (`access-control-allow-origin: *`).
+- CORS headers present (`access-control-allow-origin:` *).
 
 ### Issues encountered
 
@@ -256,20 +103,14 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 ### What's next
 
 See Roadmap in `CLAUDE.md`. Immediate priorities:
-1. End-to-end test with a real vocab message, photo, and WhatsApp file to confirm the full pipeline.
 
-2. we need to create an agent to sanitize the words and sentences before storing them in the database or even if they are already stored, the agent should be able to sanitize them.
+1. Have a view to visualize and edit the vocabulary and sentences stored in the database.  
 
-2. Have an enricher for single words, the idea is that when single german words are detected or sent, the agent should be able to enrich the word with a translation, and other relevante information.
+2. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.  
 
-If it is a noun, the gender, the plural, a sentence.
-If it is a verb, the tense, the conjugation, a sentence.
-If it is an adjective, how is it declined in different cases and genders?
-So on for other type of words.
+3. Have an agent that can analyze the vocabulary and sentences stored in the database and suggest new words to learn.  
 
+4. Add GitHub agentic workflows to automate the creation of documentation.  
 
-3. Have a view to visualize and edit the vocabulary and sentences stored in the database.
+5. We want to add a whatsapp integration to get new words, phrases and images directly from whatsap.
 
-4. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.
-
-5. Add GitHub agentic workflows to automate the creation of documentation.

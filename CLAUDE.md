@@ -9,17 +9,28 @@ The user communicates in **Spanish or English**. The stored content is **German*
 ## High-Level Architecture
 
 ```
-User (React chat UI)
+User (React chat UI + enrichment toggle: Quick / Enrich)
   |
-  POST /api/chats/{chat_id}/messages  (multipart: text + files)
+  POST /api/chats/{chat_id}/messages  (multipart: text + files + enrich)
   |
   FastAPI backend (api/routes.py)
   |
   AutoGen AssistantAgent (agents/orchestrator.py)
   |  powered by AnthropicChatCompletionClient (Claude)
   |
-  |--- store_words           -> Supabase `words` + `translations` tables
-  |--- store_texts           -> Supabase `texts` table
+  |--- [enrich=true]  save_vocabulary -----> Intake Agent (agents/intake.py)
+  |                                            |--- propose_complete_word (in-memory)
+  |                                            |--- propose_complete_text (in-memory)
+  |                                            -> full grammar, tags, explanations
+  |
+  |--- [enrich=false] store_words_quick ---> orchestrator classifies word_type
+  |                                            -> basic word + translations only
+  |
+  |--- Both paths return proposals to frontend
+  |      -> user reviews in IntakeReview modal
+  |      -> POST /api/intake/apply -> db_helpers.py
+  |           -> words + translations + verb/noun details + tags + explanations
+  |
   |--- extract_from_image    -> OCR (raw text) -> classifier.py -> store
   |--- parse_whatsapp_export -> parser.py -> classifier.py -> store
   |--- [FUTURE] generate_quizlet
@@ -75,7 +86,7 @@ All tables have RLS disabled (personal single-user app). Every table includes `c
 
 ### Translations
 
-- **`translations`** -- `id` (uuid PK), `word_id` (uuid FK → words), `language` (text: "es"/"en"), `translation` (text), timestamps. A word can have multiple translations in different languages.
+- **`translations`** -- `id` (uuid PK), `word_id` (uuid FK → words, nullable), `text_id` (uuid FK → texts, nullable), `language` (text: "es"/"en"), `translation` (text), timestamps. Exclusive FK: exactly one of `word_id` or `text_id` must be set (CHECK constraint). Both words and texts can have multiple translations in different languages.
 
 ### Relationships
 
@@ -96,6 +107,18 @@ All tables have RLS disabled (personal single-user app). Every table includes `c
 ### Corrections
 
 - **`corrections`** -- `id` (uuid PK), `word_id` (uuid FK → words, nullable), `text_id` (uuid FK → texts, nullable), `original_text` (text), `corrected_text` (text), `note` (text), `status` (text: "pending"/"accepted"/"rejected"), timestamps. Exclusive FK: exactly one of `word_id` or `text_id` must be set. Only German content is corrected, never translations or explanations. A word or text can have multiple corrections.
+
+### Quiz & Practice
+
+- **`quizlets`** -- `id` (uuid PK), `name` (text), `prompt` (text), `pool_count` (int), `default_question_count` (int), `types` (text, JSON array), `source` (text), timestamps. Saved generated quiz with its question-pool settings.
+
+- **`quizlet_questions`** -- `id` (uuid PK), `quizlet_id` (uuid FK → quizlets, CASCADE), `position` (int), `type` (text), `prompt` (text), `german` (text), `answer` (text), `options` (jsonb), `hint` (text), `word_id` (uuid FK → words, SET NULL), timestamps. Exact snapshot of each generated question.
+
+- **`quizlet_tags`** -- `(quizlet_id, tag_id)` composite PK. Tags used when the quiz was generated.
+
+- **`quiz_runs`** -- `id` (uuid PK), `quizlet_id` (uuid FK → quizlets, CASCADE), `question_count` (int), `started_at` (timestamptz), `completed_at` (timestamptz), `score_correct` (int), `score_total` (int), timestamps. One row per practice session.
+
+- **`review_log`** -- `id` (uuid PK), `quiz_run_id` (uuid FK → quiz_runs, SET NULL), `quizlet_question_id` (uuid FK → quizlet_questions, SET NULL), `word_id` (uuid FK → words, SET NULL), `result` (text: "correct"/"incorrect"), `question_type` (text), timestamps. One row per answered question. Foundation for future spaced repetition (SM-2).
 
 ### Operational
 
@@ -160,8 +183,16 @@ Follow these rules when creating new tables, adding columns, or making any schem
 
 | Module | Purpose |
 |--------|---------|
-| `agents/orchestrator.py` | AutoGen `AssistantAgent` setup, `run_agent()` async entry point, chat history loading |
-| `agents/tools.py` | AutoGen tool functions + shared `classify_and_store()` pipeline |
+| `agents/orchestrator.py` | AutoGen `AssistantAgent` setup, `run_agent()` async entry point, chat history loading. Two vocab tools: `save_vocabulary` (full enrichment via intake agent) and `store_words_quick` (fast, orchestrator-classified). Selected by `enrich` flag |
+| `agents/intake.py` | Word intake sub-agent: proposes fully-populated words (word_type, grammar details, bilingual translations, tags, explanations) for user review. No DB writes — follows propose-review-apply pattern |
+| `agents/intake_tools.py` | Intake agent tools: `propose_complete_word`, `propose_complete_text` (in-memory proposal collection, no DB writes) |
+| `agents/db_helpers.py` | Shared DB write helpers: `insert_word_complete`, `insert_text_complete`, `upsert_verb_details`, `upsert_noun_details`, `assign_tags`. Used by both intake and enricher agents |
+| `agents/enricher.py` | Word enricher agent: proposes retroactive data completions for existing words |
+| `agents/enricher_tools.py` | Enricher agent tools: `get_word_schema`, `fetch_words_to_enrich`, `propose_word_enrichment` |
+| `agents/quiz_agent.py` | Quiz generator agent: runs AutoGen agent to create quiz questions from stored vocabulary |
+| `agents/quiz_tools.py` | Quiz agent tools: `fetch_words_for_quiz`, `fetch_all_translations`, `build_quiz` |
+| `agents/quiz_helpers.py` | Quiz persistence helpers: `save_quizlet`, `list_quizlets`, `create_quiz_run`, `complete_quiz_run`, word/tag practice stats |
+| `agents/tools.py` | AutoGen tool functions + shared `classify_and_store()` pipeline (used by OCR/WhatsApp flows) |
 | `agents/config.py` | Model client factory (`AnthropicChatCompletionClient`) |
 | `core/models.py` | Shared dataclasses: `Message`, `VocabPair`, `GermanSentence` |
 | `core/writers.py` | CSV writers (legacy CLI, still works) |
@@ -172,7 +203,7 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | `ocr/client.py` | Sends images to Claude Vision, returns raw text lines (`list[str]`) |
 | `ocr/cli.py` | Standalone CLI for notebook OCR |
 | `api/main.py` | FastAPI app, CORS, lifespan (dotenv loading) |
-| `api/routes.py` | REST endpoints: chats CRUD, messages, words (with detail), texts (with detail), translations, verb/noun/adj details, explanations, tags, tag assignments, corrections, text-word links |
+| `api/routes.py` | REST endpoints: chats CRUD, messages (accepts `enrich` form field, returns intake_proposals), intake/apply, enrich propose/apply, words (with detail), texts (with detail), translations, verb/noun/adj details, explanations, tags, tag assignments, corrections, text-word links |
 | `api/tools.py` | Legacy tool handlers (kept for reference; agents/tools.py is the active version) |
 | `api/supabase_client.py` | `get_supabase()` singleton via `lru_cache` |
 
@@ -182,19 +213,23 @@ Follow these rules when creating new tables, adding columns, or making any schem
 |------|---------|
 | `src/App.tsx` | Main layout, multi-chat state (chats list, active chat), message handling, view switching |
 | `src/api.ts` | API functions: chat CRUD, `sendMessage`, `fetchHistory`, words/texts CRUD, detail fetches, verb/noun/adj details, explanations, tags, corrections, text-word links |
-| `src/components/ChatInput.tsx` | Text input + file upload (`+` button), file previews |
+| `src/components/ChatInput.tsx` | Text input + file upload (`+` button), file previews, Quick/Enrich toggle pill |
 | `src/components/ChatList.tsx` | Sidebar chat list: create, rename, delete, switch between chats |
 | `src/components/ChatMessage.tsx` | Message bubble (user vs assistant styling) |
 | `src/components/LibraryView.tsx` | Tab container switching between Words, Texts, and Tags tabs |
 | `src/components/WordsTable.tsx` | Words list with expand/collapse detail, inline editing, create, search, soft delete |
 | `src/components/TextsTable.tsx` | Texts list with expand/collapse detail, inline editing, create, search, soft delete |
 | `src/components/WordDetail.tsx` | Expanded word detail panel: translations, verb/noun/adj details, explanations, tags, corrections |
-| `src/components/TextDetail.tsx` | Expanded text detail panel: explanations, tags, corrections, linked words |
+| `src/components/TextDetail.tsx` | Expanded text detail panel: translations, explanations, tags, corrections, linked words |
+| `src/components/TranslationsSection.tsx` | Shared translations CRUD section (add/edit/delete) used by both WordDetail and TextDetail |
 | `src/components/TagPills.tsx` | Reusable tag pill row with add/remove, autocomplete, and create-inline for words, texts, explanations |
 | `src/components/ExplanationsList.tsx` | Reusable explanations list with inline edit, delete, add, and per-explanation tag pills |
 | `src/components/CorrectionsList.tsx` | Reusable corrections list with accept/reject status, add form, delete |
 | `src/components/TagsTable.tsx` | Global tag pool management: create, search, delete |
-| `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews, detail panels, tag pills, declension grid, corrections |
+| `src/components/IntakeReview.tsx` | Modal for reviewing word proposals from the intake agent before saving (propose-review-apply) |
+| `src/components/EnrichmentReview.tsx` | Modal for reviewing enrichment proposals for existing words |
+| `src/components/QuizletView.tsx` | Quiz home (saved quizlets list), setup (generate & save with pool/run counts), session, results with run persistence and subset replay |
+| `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews, detail panels, tag pills, declension grid, corrections, quiz home/cards, practice stats |
 | `src/index.css` | CSS variables, dark/light mode via `prefers-color-scheme` |
 
 ## Design Decisions
@@ -222,25 +257,28 @@ Follow these rules when creating new tables, adding columns, or making any schem
 
 ## Roadmap (Planned Sub-Agents / Tools)
 
-### Phase 2: Quizlet Generator
-- New tool: `generate_quizlet` -- given a topic or a date range, pull vocabulary from the DB and generate flashcard-style quiz questions.
-- The agent should be able to call this when the user says things like "quiz me on this week's vocabulary" or "create flashcards for food words."
-- Output: a structured quiz object (question + options + correct answer) that the frontend can render interactively.
+### Phase 2: Quizlet Generator ✅
+- Implemented: quiz generation via agent, saved quizlets with question pools, quiz runs with subset sampling, per-answer review logging, practice stats for words and tags.
+- Quizlets are saved with their exact question snapshot and can be re-practiced with fresh random subsets.
+- Review log tracks every answer with `word_id` for future SRS use.
 
 ### Phase 3: Data correction
 - New tool: `correct_data` -- the agent should be able to correct the data in the database.
 - If a word in **German** is not correct or spelled wrong, the agent should be able to correct it and make a note of the mistake.
 
-
 ### Phase 3: Topic Explainer
 - New tool: `explain_topic` -- the user asks a German grammar question ("when do I use Dativ?") and the agent generates a clear explanation using examples from the user's own stored vocabulary/sentences.
 - Should query the DB for relevant examples to ground the explanation in familiar material.
 
-### Phase 4: Spaced Repetition
-- Track which vocabulary the user gets right/wrong in quizzes.
-- New table: `review_log` with columns for item ID, result, timestamp.
-- Implement SM-2 or similar algorithm to schedule reviews.
-- The agent proactively suggests "you have 12 words due for review today."
+### Phase 4: Spaced Repetition (due scheduler + SM-2)
+- Foundation is in place: `review_log` tracks every quiz answer with `word_id`, `result`, and timestamps.
+- Next steps:
+  1. Add `word_review_state` table with `next_review_at`, `interval_days`, `ease_factor` per word.
+  2. Compute due items: `SELECT ... FROM word_review_state WHERE next_review_at <= now()`.
+  3. Surface a "Due for review" count in the sidebar and quiz home.
+  4. Implement SM-2 scoring: after each answer, update ease factor (`EF' = EF + (0.1 - (5-q)*(0.08+(5-q)*0.02))`), calculate next interval, and write `next_review_at`.
+  5. Agent proactively suggests "you have N words due for review today."
+- Extend to texts once word-level SRS is stable.
 
 ### Phase 5: Multi-User / Deployment
 - Add Supabase Auth, re-enable RLS with user-scoped policies.
