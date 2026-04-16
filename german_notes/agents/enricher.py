@@ -9,7 +9,6 @@ Two entry points:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from autogen_agentchat.agents import AssistantAgent
@@ -17,6 +16,11 @@ from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken
 
 from german_notes.agents.config import get_model_client
+from german_notes.agents.db_helpers import (
+    assign_tags,
+    upsert_noun_details,
+    upsert_verb_details,
+)
 from german_notes.agents.enricher_tools import make_enricher_tools
 from german_notes.api.supabase_client import get_supabase
 
@@ -173,15 +177,15 @@ async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
                     actions.append(f"+{len(new_translations)} translations")
 
             if "verb_details" in proposal:
-                _upsert_verb_details(sb, word_id, proposal["verb_details"])
+                upsert_verb_details(sb, word_id, proposal["verb_details"])
                 actions.append("verb_details")
 
             if "noun_details" in proposal:
-                _upsert_noun_details(sb, word_id, proposal["noun_details"])
+                upsert_noun_details(sb, word_id, proposal["noun_details"])
                 actions.append("noun_details")
 
             if "tags" in proposal:
-                count = _assign_tags(sb, word_id, proposal["tags"])
+                count = assign_tags(sb, word_id, proposal["tags"])
                 if count:
                     actions.append(f"+{count} tags")
 
@@ -210,85 +214,3 @@ async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
 
     applied = sum(1 for d in details if d["ok"])
     return {"applied": applied, "total": len(approved), "details": details}
-
-
-def _upsert_verb_details(sb, word_id: str, fields: dict[str, str]) -> None:
-    allowed = (
-        "infinitive", "participle",
-        "present_ich", "present_du", "present_er",
-        "present_wir", "present_ihr", "present_sie",
-    )
-    row = {k: v for k, v in fields.items() if k in allowed and v}
-    if not row:
-        return
-
-    existing = (
-        sb.table("verb_details")
-        .select("id")
-        .eq("word_id", word_id)
-        .is_("deleted_at", "null")
-        .execute()
-    )
-    if existing.data:
-        sb.table("verb_details").update(row).eq("id", existing.data[0]["id"]).execute()
-    else:
-        row["word_id"] = word_id
-        sb.table("verb_details").insert(row).execute()
-
-
-def _upsert_noun_details(sb, word_id: str, fields: dict[str, str]) -> None:
-    row = {k: v for k, v in fields.items() if k in ("article", "plural") and v}
-    if not row:
-        return
-
-    existing = (
-        sb.table("noun_details")
-        .select("id")
-        .eq("word_id", word_id)
-        .is_("deleted_at", "null")
-        .execute()
-    )
-    if existing.data:
-        sb.table("noun_details").update(row).eq("id", existing.data[0]["id"]).execute()
-    else:
-        row["word_id"] = word_id
-        sb.table("noun_details").insert(row).execute()
-
-
-def _assign_tags(sb, word_id: str, tag_names: list[str]) -> int:
-    """Find-or-create tags by name and link them to the word. Returns count of new links."""
-    existing_tags = (
-        sb.table("tags")
-        .select("id, name")
-        .is_("deleted_at", "null")
-        .execute()
-        .data
-    )
-    name_to_id = {t["name"].lower(): t["id"] for t in existing_tags}
-
-    existing_links = (
-        sb.table("word_tags")
-        .select("tag_id")
-        .eq("word_id", word_id)
-        .execute()
-        .data
-    )
-    linked_tag_ids = {l["tag_id"] for l in existing_links}
-
-    count = 0
-    for name in tag_names:
-        tag_id = name_to_id.get(name.lower())
-        if not tag_id:
-            result = sb.table("tags").insert({"name": name}).execute()
-            tag_id = result.data[0]["id"]
-            name_to_id[name.lower()] = tag_id
-
-        if tag_id not in linked_tag_ids:
-            sb.table("word_tags").insert({
-                "word_id": word_id,
-                "tag_id": tag_id,
-            }).execute()
-            linked_tag_ids.add(tag_id)
-            count += 1
-
-    return count
