@@ -10,9 +10,21 @@ from datetime import datetime, timezone
 import anthropic
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 
+from german_notes.agents.db_helpers import insert_word_complete
 from german_notes.agents.enricher import apply_enrichments, run_enricher_propose
 from german_notes.agents.orchestrator import run_agent
 from german_notes.agents.quiz_agent import run_quiz_generate
+from german_notes.agents.quiz_helpers import (
+    complete_quiz_run,
+    create_quiz_run,
+    delete_quizlet,
+    get_bulk_word_practice_stats,
+    get_quizlet_detail,
+    get_tag_practice_stats,
+    get_word_practice_stats,
+    list_quizlets,
+    save_quizlet,
+)
 from german_notes.api.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -123,6 +135,7 @@ async def delete_chat(chat_id: str):
 async def send_chat_message(
     chat_id: str,
     message: str = Form(""),
+    enrich: str = Form("false"),
     files: list[UploadFile] = File(default=[]),
 ):
     uploaded: dict[str, bytes] = {}
@@ -156,21 +169,28 @@ async def send_chat_message(
         }
     ).execute()
 
+    enrich_mode = enrich.lower() in ("true", "1", "yes")
+
     try:
-        assistant_reply = await run_agent(message, uploaded, chat_history)
+        agent_result = await run_agent(message, uploaded, chat_history, enrich=enrich_mode)
     except Exception as exc:
         logger.exception("Agent error")
         raise HTTPException(status_code=502, detail=str(exc))
+
+    assistant_reply = agent_result["reply"]
+    intake_proposals = agent_result.get("intake_proposals", [])
 
     get_supabase().table("chat_messages").insert(
         {"chat_id": chat_id, "role": "assistant", "content": assistant_reply}
     ).execute()
 
-    # Touch the chat so the updated_at trigger fires and it sorts to the top
     now = datetime.now(timezone.utc).isoformat()
     get_supabase().table("chats").update({"updated_at": now}).eq("id", chat_id).execute()
 
-    return {"reply": assistant_reply}
+    response: dict = {"reply": assistant_reply}
+    if intake_proposals:
+        response["intake_proposals"] = intake_proposals
+    return response
 
 
 @router.get("/chats/{chat_id}/messages")
@@ -245,7 +265,7 @@ async def delete_word(item_id: str):
 
 
 @router.post("/words/{word_id}/translations")
-async def add_translation(word_id: str, fields: dict = Body(...)):
+async def add_word_translation(word_id: str, fields: dict = Body(...)):
     language = fields.get("language")
     translation = fields.get("translation")
     if not language or not translation:
@@ -254,6 +274,20 @@ async def add_translation(word_id: str, fields: dict = Body(...)):
         raise HTTPException(status_code=400, detail="language must be 'es' or 'en'")
 
     row = {"word_id": word_id, "language": language, "translation": translation}
+    result = get_supabase().table("translations").insert(row).execute()
+    return result.data[0]
+
+
+@router.post("/texts/{text_id}/translations")
+async def add_text_translation(text_id: str, fields: dict = Body(...)):
+    language = fields.get("language")
+    translation = fields.get("translation")
+    if not language or not translation:
+        raise HTTPException(status_code=400, detail="language and translation required")
+    if language not in ("es", "en"):
+        raise HTTPException(status_code=400, detail="language must be 'es' or 'en'")
+
+    row = {"text_id": text_id, "language": language, "translation": translation}
     result = get_supabase().table("translations").insert(row).execute()
     return result.data[0]
 
@@ -373,7 +407,7 @@ async def list_texts(limit: int = 200):
     result = (
         get_supabase()
         .table("texts")
-        .select("*")
+        .select("*, translations(*)")
         .is_("deleted_at", "null")
         .order("created_at", desc=True)
         .limit(limit)
@@ -480,6 +514,9 @@ async def get_text_detail(item_id: str):
         raise HTTPException(status_code=404, detail="Text not found")
 
     data = text.data
+
+    transl = sb.table("translations").select("*").eq("text_id", item_id).is_("deleted_at", "null").execute()
+    data["translations"] = transl.data
 
     expl = sb.table("explanations").select("*").eq("entity_type", "text").eq("entity_id", item_id).is_("deleted_at", "null").execute()
     for e in expl.data:
@@ -844,6 +881,116 @@ async def generate_quiz(body: dict = Body(...)):
     return {"questions": questions}
 
 
+# ── Saved quizlets (generate-and-save, list, detail, runs, stats) ──
+
+
+@router.post("/quizlets/generate-and-save")
+async def generate_and_save_quizlet(body: dict = Body(...)):
+    prompt = body.get("prompt")
+    tag_ids = body.get("tag_ids")
+    pool_count = body.get("pool_count", 15)
+    question_count = body.get("question_count", 10)
+    types = body.get("types", ["flashcard", "multiple_choice"])
+    name = body.get("name", "")
+
+    if not prompt and not tag_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one of 'prompt' or 'tag_ids' is required",
+        )
+    if tag_ids is not None and not isinstance(tag_ids, list):
+        raise HTTPException(status_code=400, detail="tag_ids must be an array")
+
+    try:
+        questions = await run_quiz_generate(
+            prompt=prompt,
+            tag_ids=tag_ids or None,
+            count=pool_count,
+            types=types,
+        )
+    except Exception:
+        logger.exception("Quiz generator agent failed")
+        raise HTTPException(status_code=502, detail="Quiz generator agent failed")
+
+    if not questions:
+        raise HTTPException(status_code=422, detail="No questions could be generated")
+
+    auto_name = name.strip() if name.strip() else (prompt or "Quiz")[:80]
+
+    quizlet = save_quizlet(
+        name=auto_name,
+        prompt=prompt,
+        tag_ids=tag_ids,
+        questions=questions,
+        pool_count=len(questions),
+        default_question_count=min(question_count, len(questions)),
+        types=types,
+    )
+    quizlet["questions"] = questions
+    return quizlet
+
+
+@router.get("/quizlets")
+async def list_saved_quizlets(limit: int = 50):
+    return {"quizlets": list_quizlets(limit=limit)}
+
+
+@router.get("/quizlets/{quizlet_id}")
+async def get_saved_quizlet(quizlet_id: str):
+    quizlet = get_quizlet_detail(quizlet_id)
+    if not quizlet:
+        raise HTTPException(status_code=404, detail="Quizlet not found")
+    return quizlet
+
+
+@router.delete("/quizlets/{quizlet_id}")
+async def soft_delete_quizlet(quizlet_id: str):
+    ok = delete_quizlet(quizlet_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Quizlet not found")
+    return {"ok": True}
+
+
+@router.post("/quizlets/{quizlet_id}/runs")
+async def start_quiz_run(quizlet_id: str, body: dict = Body(...)):
+    qcount = body.get("question_count")
+    try:
+        run = create_quiz_run(quizlet_id, question_count=qcount)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return run
+
+
+@router.post("/quiz-runs/{run_id}/complete")
+async def finish_quiz_run(run_id: str, body: dict = Body(...)):
+    answers = body.get("answers")
+    if not answers or not isinstance(answers, list):
+        raise HTTPException(status_code=400, detail="answers array is required")
+    try:
+        run = complete_quiz_run(run_id, answers)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return run
+
+
+# ── Practice stats ───────────────────────────────────
+
+
+@router.get("/stats/words/practice")
+async def bulk_word_practice_stats():
+    return {"stats": get_bulk_word_practice_stats()}
+
+
+@router.get("/stats/words/{word_id}/practice")
+async def word_practice_stats(word_id: str):
+    return get_word_practice_stats(word_id)
+
+
+@router.get("/stats/tags")
+async def tag_practice_stats_route():
+    return {"tags": get_tag_practice_stats()}
+
+
 # ── Word enrichment (propose + apply) ────────────────
 
 
@@ -871,3 +1018,35 @@ async def apply_word_enrichments(body: dict = Body(...)):
         raise HTTPException(status_code=400, detail="approved array is required")
     result = await apply_enrichments(approved)
     return result
+
+
+# ── Word intake (apply approved proposals from chat) ──
+
+
+@router.post("/intake/apply")
+async def apply_intake_proposals(body: dict = Body(...)):
+    approved = body.get("approved")
+    if not approved or not isinstance(approved, list):
+        raise HTTPException(status_code=400, detail="approved array is required")
+
+    details: list[dict] = []
+    for proposal in approved:
+        german = proposal.get("german", "?")
+        try:
+            record = insert_word_complete(proposal)
+            details.append({
+                "word_id": record["id"],
+                "german": german,
+                "word_type": proposal.get("word_type", "other"),
+                "ok": True,
+            })
+        except Exception:
+            logger.exception("Intake apply failed for '%s'", german)
+            details.append({
+                "german": german,
+                "word_type": proposal.get("word_type", "other"),
+                "ok": False,
+            })
+
+    applied = sum(1 for d in details if d["ok"])
+    return {"applied": applied, "total": len(approved), "details": details}

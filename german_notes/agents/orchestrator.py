@@ -3,11 +3,18 @@
 Provides ``run_agent()`` — the async entry point called by the FastAPI route.
 Internally it wires up an ``AssistantAgent`` with tools, loads prior chat
 history from Supabase, and returns the assistant's final text reply.
+
+Word storage is delegated to a dedicated intake agent that classifies word
+types, generates grammar details, adds bilingual translations, tags, and
+explanations. Proposals are returned to the frontend for user review before
+being persisted (propose-review-apply pattern).
 """
 
 from __future__ import annotations
 
 import base64
+import json
+import logging
 import mimetypes
 from typing import Any
 
@@ -16,24 +23,49 @@ from autogen_agentchat.messages import MultiModalMessage, TextMessage
 from autogen_core import CancellationToken, Image
 
 from german_notes.agents.config import get_model_client
-from german_notes.agents.tools import (
-    make_file_tools,
-    store_texts,
-    store_words,
-)
+from german_notes.agents.intake import run_intake_agent
+from german_notes.agents.tools import make_file_tools
 
-SYSTEM_PROMPT = """\
+logger = logging.getLogger(__name__)
+
+SYSTEM_PROMPT_ENRICH = """\
 You are a German-language learning assistant. The user sends you vocabulary, \
 notebook photos, and WhatsApp chat exports so you can store and organise their \
 German learning material.
 
 Your behaviour:
-- When the user sends a new German word with its translation, call store_words.
-- When the user sends a German sentence or phrase for review, call store_texts.
+- When the user sends German words (with or without translations), call \
+save_vocabulary. Describe ALL the words and any translations/context the user \
+provided. The vocabulary intake system will handle classification, grammar \
+details, and bilingual translations automatically.
 - When the user attaches a photo of handwritten notes, call extract_from_image.
 - When the user attaches a WhatsApp .txt export, call parse_whatsapp_export.
 - You may call multiple tools in a single turn if needed.
-- After storing data, confirm what was saved in a friendly, concise reply.
+- After calling save_vocabulary, summarise the proposed words in a friendly, \
+concise reply. Include the word type (verb/noun/adjective) and a brief \
+translation for each word. Mention that the user will be able to review and \
+confirm the proposals before they are saved.
+- If the user just wants to chat or asks a question about German, respond directly \
+without calling any tool.
+- Always reply in English.\
+"""
+
+SYSTEM_PROMPT_QUICK = """\
+You are a German-language learning assistant. The user sends you vocabulary, \
+notebook photos, and WhatsApp chat exports so you can store and organise their \
+German learning material.
+
+Your behaviour:
+- When the user sends German words (with or without translations), call \
+store_words_quick once for EACH word. Classify the word_type yourself based \
+on context (verb/noun/adjective/other). Provide a Spanish translation and an \
+English translation for each word. If the user already provided translations, \
+use those.
+- When the user attaches a photo of handwritten notes, call extract_from_image.
+- When the user attaches a WhatsApp .txt export, call parse_whatsapp_export.
+- You may call multiple tools in a single turn if needed.
+- After storing words, summarise what was proposed in a friendly, concise reply. \
+Mention that the user will be able to review and confirm before saving.
 - If the user just wants to chat or asks a question about German, respond directly \
 without calling any tool.
 - Always reply in English.\
@@ -71,8 +103,6 @@ def _build_state_from_history(
         else:
             llm_messages.append(entry)
 
-    # Trim trailing user messages so the state ends on an assistant turn;
-    # the next user turn will be supplied via on_messages().
     while llm_messages and llm_messages[-1]["type"] == "UserMessage":
         llm_messages.pop()
 
@@ -127,25 +157,121 @@ def _extract_final_text(response) -> str:
     return str(msg.content)
 
 
+def _make_save_vocabulary_tool(
+    collected_proposals: list[dict[str, Any]],
+):
+    """Create a ``save_vocabulary`` tool that captures *collected_proposals*.
+
+    Uses the closure pattern (same as make_file_tools / make_intake_tools)
+    so proposals are safely scoped to a single request.
+    """
+
+    async def save_vocabulary(description: str, source: str = "chat") -> str:
+        """Delegate word proposal to the intake agent for full enrichment.
+
+        Pass a natural-language description of the words to store, including
+        any translations or context the user provided. The intake agent will
+        classify word types, generate grammar details, add bilingual
+        translations, assign tags, and write explanations.
+
+        Nothing is written to the database. Proposals are returned for user review.
+        """
+        result = await run_intake_agent(description, source=source)
+        proposals = result.get("proposals", [])
+        collected_proposals.extend(proposals)
+        logger.info("save_vocabulary collected %d proposals (total %d)", len(proposals), len(collected_proposals))
+        return json.dumps({
+            "proposed": len(proposals),
+            "summary": result.get("summary", ""),
+        }, ensure_ascii=False)
+
+    return save_vocabulary
+
+
+def _make_store_words_quick_tool(
+    collected_proposals: list[dict[str, Any]],
+):
+    """Create a ``store_words_quick`` tool for the quick-save path.
+
+    The orchestrator itself classifies word_type and provides basic
+    translations — no LLM intake agent is invoked.
+    """
+
+    async def store_words_quick(
+        german: str,
+        word_type: str = "other",
+        translation_es: str = "",
+        translation_en: str = "",
+        source: str = "chat",
+    ) -> str:
+        """Quick-store a single German word with basic metadata.
+
+        Args:
+            german: The German word or short phrase.
+            word_type: One of "verb", "noun", "adjective", "other".
+            translation_es: Spanish translation.
+            translation_en: English translation.
+            source: Where the word came from (default "chat").
+        """
+        translations = []
+        if translation_es:
+            translations.append({"language": "es", "translation": translation_es})
+        if translation_en:
+            translations.append({"language": "en", "translation": translation_en})
+
+        proposal: dict[str, Any] = {
+            "type": "word",
+            "german": german,
+            "word_type": word_type,
+            "source": source,
+            "translations": translations,
+        }
+        collected_proposals.append(proposal)
+        logger.info(
+            "store_words_quick collected '%s' (total %d)",
+            german,
+            len(collected_proposals),
+        )
+        return json.dumps(
+            {"proposed": german, "word_type": word_type},
+            ensure_ascii=False,
+        )
+
+    return store_words_quick
+
+
 async def run_agent(
     user_text: str,
     uploaded_files: dict[str, bytes] | None = None,
     chat_history: list[dict[str, Any]] | None = None,
-) -> str:
+    *,
+    enrich: bool = False,
+) -> dict[str, Any]:
     """Send the user message (+ optional files) through the AutoGen agent.
 
-    Returns the assistant's final text response.
+    Returns a dict with:
+        - "reply": the assistant's text response
+        - "intake_proposals": list of proposed words (empty if none)
     """
     uploaded_files = uploaded_files or {}
     model_client = get_model_client()
 
+    collected_proposals: list[dict[str, Any]] = []
+
     ocr_tool, wa_tool = make_file_tools(uploaded_files)
+
+    if enrich:
+        vocab_tool = _make_save_vocabulary_tool(collected_proposals)
+        system_prompt = SYSTEM_PROMPT_ENRICH
+    else:
+        vocab_tool = _make_store_words_quick_tool(collected_proposals)
+        system_prompt = SYSTEM_PROMPT_QUICK
 
     agent = AssistantAgent(
         name="german_notes_assistant",
         model_client=model_client,
-        tools=[store_words, store_texts, ocr_tool, wa_tool],
-        system_message=SYSTEM_PROMPT,
+        tools=[vocab_tool, ocr_tool, wa_tool],
+        system_message=system_prompt,
         reflect_on_tool_use=True,
     )
 
@@ -158,4 +284,11 @@ async def run_agent(
     response = await agent.on_messages([user_msg], CancellationToken())
 
     await model_client.close()
-    return _extract_final_text(response)
+
+    reply_text = _extract_final_text(response)
+    logger.info("run_agent done: reply_len=%d, proposals=%d", len(reply_text), len(collected_proposals))
+
+    return {
+        "reply": reply_text,
+        "intake_proposals": collected_proposals,
+    }
