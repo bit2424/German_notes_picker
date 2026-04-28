@@ -19,13 +19,6 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState<ApplyResult | null>(null);
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
   function toggleWord(wordId: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -58,78 +51,75 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
     }
   }
 
+  const handleClose = () => {
+    if (applying) return;
+    onDone(false);
+  };
+
   return (
-    <div className="modal-overlay" onClick={() => !applying && onDone(false)}>
-      <div className="modal-container enrichment-modal" onClick={(e) => e.stopPropagation()}>
-        {result ? (
-          <>
-            <div className="modal-header">
-              <h3>Enrichment Complete</h3>
-            </div>
-            <div className="modal-body">
-              <div className="enrichment-result">
-                <p className="enrichment-result-summary">
-                  Applied {result.applied} of {result.total} enrichments
-                </p>
-                <ul className="enrichment-result-list">
-                  {result.details.map((d) => (
-                    <li key={d.word_id} className={d.ok ? 'ok' : 'fail'}>
-                      <strong>{d.german}</strong>
-                      {d.ok ? ': ' : ' (failed): '}
-                      {d.actions.join(', ') || 'no changes'}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="row-btn save-btn" onClick={() => onDone(true)}>
-                Done
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="modal-header">
-              <h3>Proposed Enrichments ({proposals.length} words)</h3>
-              <div className="enrichment-header-actions">
-                <button className="row-btn edit-btn" onClick={toggleAll}>
-                  {selected.size === proposals.length ? 'Deselect All' : 'Select All'}
-                </button>
-              </div>
-            </div>
-            <div className="modal-body">
-              <div className="enrichment-cards">
-                {proposals.map((p) => (
-                  <ProposalCard
-                    key={p.word_id}
-                    proposal={p}
-                    checked={selected.has(p.word_id)}
-                    onToggle={() => toggleWord(p.word_id)}
-                  />
+    <Dialog open onClose={handleClose} maxWidth="md" fullWidth>
+      {result ? (
+        <>
+          <DialogTitle>Enrichment Complete</DialogTitle>
+          <DialogContent dividers>
+            <div className="enrichment-result">
+              <p className="enrichment-result-summary">
+                Applied {result.applied} of {result.total} enrichments
+              </p>
+              <ul className="enrichment-result-list">
+                {result.details.map((d) => (
+                  <li key={d.word_id} className={d.ok ? 'ok' : 'fail'}>
+                    <strong>{d.german}</strong>
+                    {d.ok ? ': ' : ' (failed): '}
+                    {d.actions.join(', ') || 'no changes'}
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
-            <div className="modal-footer">
-              <button
-                className="row-btn save-btn"
-                onClick={handleApply}
-                disabled={applying || selected.size === 0}
-              >
-                {applying ? 'Applying...' : `Apply ${selected.size} Selected`}
-              </button>
-              <button
-                className="row-btn cancel-btn"
-                onClick={() => onDone(false)}
-                disabled={applying}
-              >
-                Cancel
-              </button>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="contained" onClick={() => onDone(true)}>
+              Done
+            </Button>
+          </DialogActions>
+        </>
+      ) : (
+        <>
+          <DialogTitle
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+          >
+            <span>Proposed Enrichments ({proposals.length} words)</span>
+            <Button size="small" onClick={toggleAll}>
+              {selected.size === proposals.length ? 'Deselect All' : 'Select All'}
+            </Button>
+          </DialogTitle>
+          <DialogContent dividers>
+            <div className="enrichment-cards">
+              {proposals.map((p) => (
+                <ProposalCard
+                  key={p.word_id}
+                  proposal={p}
+                  checked={selected.has(p.word_id)}
+                  onToggle={() => toggleWord(p.word_id)}
+                />
+              ))}
             </div>
-          </>
-        )}
-      </div>
-    </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => onDone(false)} disabled={applying}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleApply}
+              disabled={applying || selected.size === 0}
+            >
+              {applying ? 'Applying...' : `Apply ${selected.size} Selected`}
+            </Button>
+          </DialogActions>
+        </>
+      )}
+    </Dialog>
   );
 }
 
@@ -156,7 +146,7 @@ function ProposalCard({
   return (
     <div className={`enrichment-card ${checked ? 'selected' : ''}`}>
       <label className="enrichment-card-header">
-        <input type="checkbox" checked={checked} onChange={onToggle} />
+        <Checkbox checked={checked} onChange={onToggle} size="small" sx={{ p: 0.5 }} />
         <span className="enrichment-word">{p.german}</span>
       </label>
 
