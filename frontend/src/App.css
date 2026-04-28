@@ -1492,10 +1492,6 @@
   color: var(--fg);
 }
 
-.enrich-check-col input[type='checkbox']:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 
 .table-filter-chip:focus-visible {
   outline: 2px solid var(--accent);
@@ -2441,15 +2437,60 @@
   line-height: 1;
 }
 
-.enrich-check-col input[type='checkbox'] {
-  accent-color: var(--green);
+.enrich-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid var(--border);
+  border-radius: 0.25rem;
+  background: transparent;
   cursor: pointer;
-  opacity: 0.35;
-  transition: opacity 0.15s;
+  position: relative;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    opacity 0.15s;
+  opacity: 0.4;
+  flex-shrink: 0;
 }
 
-.enrich-check-col input[type='checkbox']:checked,
-.data-table tbody tr:hover .enrich-check-col input[type='checkbox'] {
+.enrich-checkbox:checked {
+  background: var(--green);
+  border-color: var(--green);
+  opacity: 1;
+}
+
+.enrich-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.data-table tbody tr:hover .enrich-checkbox {
+  opacity: 0.7;
+}
+
+.data-table tbody tr:hover .enrich-checkbox:checked {
+  opacity: 1;
+}
+
+.enrich-checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+th .enrich-checkbox {
+  opacity: 0.7;
+}
+
+th .enrich-checkbox:checked {
   opacity: 1;
 }
 

@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -622,11 +621,12 @@ export default function WordsTable() {
                 <th className="enrich-check-col">
                   <div className="enrich-col-header">
                     <span className="enrich-col-label">Enrich</span>
-                    <Checkbox
+                    <input
+                      type="checkbox"
+                      className="enrich-checkbox"
                       checked={allVisibleSelected}
                       onChange={toggleEnrichAll}
                       title="Select all visible rows for enrichment"
-                      size="small"
                     />
                   </div>
                 </th>
@@ -707,10 +707,11 @@ export default function WordsTable() {
                         </div>
                       </td>
                       <td className="enrich-check-col">
-                        <Checkbox
+                        <input
+                          type="checkbox"
+                          className="enrich-checkbox"
                           checked={enrichSelection.has(w.id)}
                           onChange={() => toggleEnrichItem(w.id)}
-                          size="small"
                         />
                       </td>
                     </tr>
@@ -776,10 +777,11 @@ export default function WordsTable() {
                         </details>
                       </td>
                       <td className="enrich-check-col">
-                        <Checkbox
+                        <input
+                          type="checkbox"
+                          className="enrich-checkbox"
                           checked={enrichSelection.has(w.id)}
                           onChange={() => toggleEnrichItem(w.id)}
-                          size="small"
                         />
                       </td>
                     </tr>

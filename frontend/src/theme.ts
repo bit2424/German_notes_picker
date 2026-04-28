@@ -39,6 +39,108 @@ const theme = createTheme({
   shape: {
     borderRadius: 12,
   },
+  components: {
+    MuiBackdrop: {
+      styleOverrides: {
+        invisible: {
+          backgroundColor: 'transparent',
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          backgroundImage: 'none',
+          border: '1px solid var(--border)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+        },
+      },
+    },
+    MuiMenu: {
+      defaultProps: {
+        transitionDuration: 150,
+      },
+      styleOverrides: {
+        paper: {
+          borderRadius: '0.6rem !important',
+          minWidth: 120,
+        },
+        list: {
+          padding: '0.25rem',
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.82rem',
+          borderRadius: '0.4rem',
+          padding: '0.45rem 0.65rem',
+          '&:hover': {
+            backgroundColor: 'var(--accent-subtle)',
+          },
+          '&.Mui-selected': {
+            backgroundColor: 'var(--accent-subtle)',
+            color: 'var(--accent)',
+            fontWeight: 600,
+            '&:hover': {
+              backgroundColor: 'var(--accent-subtle)',
+            },
+          },
+        },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        icon: {
+          color: 'var(--muted)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          boxShadow: 'none',
+          '&:hover': {
+            boxShadow: 'none',
+          },
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--border)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--accent)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'var(--accent)',
+            borderWidth: '1px',
+          },
+        },
+        input: {
+          color: 'var(--fg)',
+          '&::placeholder': {
+            color: 'var(--muted)',
+            opacity: 1,
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundImage: 'none',
+          border: '1px solid var(--border)',
+        },
+      },
+    },
+  },
 });
 
 export default theme;
