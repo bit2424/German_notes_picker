@@ -4,6 +4,61 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-28 -- Project guardrails: linters, formatters, type-checkers, pre-commit, CI
+
+### What was done
+
+**Backend tooling (`pyproject.toml`)**
+
+- Added dev dependencies: `ruff`, `mypy`, `pytest`, `pytest-asyncio`.
+- Configured `[tool.ruff]` (line length 100, target `py311`) and `[tool.ruff.lint]` with selected rule groups: `E`, `F`, `W`, `I`, `B`, `UP`, `SIM`, `RUF`. `B008` is globally ignored — FastAPI uses `Body()`, `File()`, `Form()`, `Depends()` in argument defaults by design.
+- Fixed all real lint findings (88 autofixed by ruff, plus manual fixes): exception chaining (`raise ... from exc` in 8 places in `routes.py`), one en-dash → hyphen in a docstring, two long-line wraps in `enricher_tools.py`.
+- Configured `[tool.mypy]` with a permissive baseline (only `warn_unused_ignores`, `warn_redundant_casts`, `no_implicit_optional`). Added `ignore_missing_imports` overrides for `supabase`, `autogen_agentchat`, `autogen_ext`, `langdetect`, `tiktoken`. The 11 legacy modules with heavy untyped Supabase JSON access are listed in an `ignore_errors = true` override — they will be ratcheted back on per-file as call sites get migrated to typed wrappers (when the ORM lands).
+- Configured `[tool.pytest.ini_options]` with `asyncio_mode = "auto"` and `testpaths = ["tests"]`.
+- Created `tests/__init__.py` and `tests/test_smoke.py` (single import-the-package smoke test).
+- Changed `requires-python` from Poetry's shorthand `^3.11` to PEP 440's `>=3.11,<4.0` so ruff can parse the file.
+
+**Frontend tooling (`frontend/`)**
+
+- Added dev dependencies: `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`, `eslint-plugin-jsx-a11y`.
+- Created `.prettierrc` (single quotes, semis, print width 100, trailing commas) and `.prettierignore`.
+- Updated `eslint.config.js` to extend `jsx-a11y/recommended` and `eslint-config-prettier` (last, to disable conflicting style rules), plus an inline `prettier/prettier` rule.
+- Pre-existing a11y issues across legacy components (`click-events-have-key-events`, `no-static-element-interactions`, `no-noninteractive-element-interactions`, `no-autofocus`) and one `react-hooks/set-state-in-effect` are downgraded from `error` → `warn` so the baseline is green; ratchet to `error` once each rule is clean.
+- Added `package.json` scripts: `lint:fix`, `typecheck` (`tsc -b --noEmit`), `format`, `format:check`.
+- Ran `npm run format` once over the codebase to apply Prettier style.
+
+**Pre-commit (`.pre-commit-config.yaml`)**
+
+- ruff (lint + format) on Python files.
+- prettier and eslint on `frontend/**/*.{ts,tsx,css,json,md,html,yml,yaml}` via local hooks (system entry, since prettier and eslint are already in `frontend/node_modules`).
+- mypy is intentionally NOT in pre-commit (slow); it runs in CI only.
+
+**CI (`.github/workflows/ci.yml`)**
+
+- Two parallel jobs on `push` to `main` and on every `pull_request`:
+  - `backend`: `poetry install` → `ruff check` → `ruff format --check` → `mypy german_notes` → `pytest`.
+  - `frontend`: `npm ci` → `eslint` → `prettier --check` → `tsc -b` → `vite build`.
+
+### Verified working
+
+- `poetry run ruff check .` — clean.
+- `poetry run ruff format --check .` — clean.
+- `poetry run mypy german_notes` — `Success: no issues found in 30 source files`.
+- `poetry run pytest` — 1 passed.
+- `cd frontend && npm run lint` — 0 errors, 40 warnings (pre-existing, tracked).
+- `cd frontend && npm run format:check` — all files match.
+- `cd frontend && npm run typecheck` — clean.
+- `cd frontend && npm run build` — succeeds.
+
+### Deferred
+
+- **MUI adoption** — install `@mui/material` + Emotion, build `theme.ts` that bridges existing CSS vars (`--bg`, `--accent`, `--noun`, `--verb`) into the MUI palette so `App.css` keeps working, then migrate components incrementally starting with `IntakeReview`/`EnrichmentReview` (modals) and `ChatInput`.
+- **ORM** — three viable options: **SQLAlchemy 2.0 + Alembic** (idiomatic Python, sync, typed via `Mapped[]`), **SQLModel** (Pydantic + SQLAlchemy; combines API validation with persistence, but reverses the project's "no Pydantic" stance), or **prisma-client-py** (closest to actual Prisma DSL, but in maintenance mode and ships a Node engine binary; not recommended). Migrations: Alembic works with both SQLAlchemy and SQLModel; first migration would `alembic revision --autogenerate` against the existing Supabase schema and `alembic stamp head` to baseline.
+- **Mypy ratchet** — the 11 modules currently in `ignore_errors` need real type annotations (mostly typed wrappers around `supabase-py` `.data` lists). Re-enable per-file as each is cleaned up.
+- **A11y ratchet** — the 4 jsx-a11y rules and `react-hooks/set-state-in-effect` are warnings now; flip back to errors as the legacy click-handler and effect patterns get refactored.
+
+---
+
 ## 2026-04-06 -- Migrated agent to AutoGen + unified classification pipeline
 
 ### What was done
@@ -104,13 +159,8 @@ The `agents/` package is structured for future evolution to a Swarm: each tool g
 
 See Roadmap in `CLAUDE.md`. Immediate priorities:
 
-1. Have a view to visualize and edit the vocabulary and sentences stored in the database.  
-
-2. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.  
-
-3. Have an agent that can analyze the vocabulary and sentences stored in the database and suggest new words to learn.  
-
-4. Add GitHub agentic workflows to automate the creation of documentation.  
-
+1. Have a view to visualize and edit the vocabulary and sentences stored in the database.
+2. Start on the Quizlet Generator tool (Quizlet Generator) -- the main value-add beyond just storing data.
+3. Have an agent that can analyze the vocabulary and sentences stored in the database and suggest new words to learn.
+4. Add GitHub agentic workflows to automate the creation of documentation.
 5. We want to add a whatsapp integration to get new words, phrases and images directly from whatsap.
-

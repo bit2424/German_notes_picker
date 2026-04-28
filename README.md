@@ -43,7 +43,7 @@ Requires Python 3.11+ and [Poetry](https://python-poetry.org/).
 ### Backend
 
 ```bash
-poetry install
+poetry install --with dev
 cp .env.example .env
 # Edit .env and set:
 #   ANTHROPIC_API_KEY=sk-ant-...
@@ -57,6 +57,34 @@ cp .env.example .env
 cd frontend
 npm install
 ```
+
+### Pre-commit hooks (optional but recommended)
+
+```bash
+pipx install pre-commit  # or: brew install pre-commit
+pre-commit install
+```
+
+This installs git hooks that run `ruff` (Python lint + format), `prettier`, and `eslint --fix` on staged files before each commit.
+
+## Quality checks
+
+```bash
+# Backend
+poetry run ruff check .          # lint
+poetry run ruff format .         # format
+poetry run mypy german_notes     # type check
+poetry run pytest                # tests
+
+# Frontend
+cd frontend
+npm run lint           # ESLint
+npm run format:check   # Prettier
+npm run typecheck      # tsc --noEmit
+npm run build          # Vite build (also runs tsc)
+```
+
+The same checks run in GitHub Actions CI on every push and pull request (`.github/workflows/ci.yml`).
 
 ## Running
 
