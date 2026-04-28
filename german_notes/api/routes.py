@@ -31,6 +31,23 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
+
+@router.get("/health")
+async def health():
+    """Liveness probe for Docker healthcheck and diagnostics."""
+    sb = get_supabase()
+    try:
+        sb.table("words").select("id", count="exact").limit(0).execute()
+        db_ok = True
+    except Exception:
+        db_ok = False
+    return {
+        "status": "ok",
+        "db_connected": db_ok,
+        "anthropic_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+    }
+
+
 _SUGGEST_PROMPT = """\
 You are a German-language dictionary assistant. Given a list of German words or \
 short expressions, return translation suggestions for each one.
