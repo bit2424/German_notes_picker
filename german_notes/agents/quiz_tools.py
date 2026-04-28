@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from german_notes.api.supabase_client import get_supabase
 
@@ -42,11 +43,7 @@ def make_quiz_tools(
 
         if _tag_ids:
             tag_links = (
-                sb.table("word_tags")
-                .select("word_id")
-                .in_("tag_id", _tag_ids)
-                .execute()
-                .data
+                sb.table("word_tags").select("word_id").in_("tag_id", _tag_ids).execute().data
             )
             word_ids = list({row["word_id"] for row in tag_links})
             if not word_ids:
@@ -82,32 +79,33 @@ def make_quiz_tools(
 
         words = []
         for r in rows:
-            tags = [
-                wt["tags"]["name"]
-                for wt in (r.get("word_tags") or [])
-                if wt.get("tags")
-            ]
+            tags = [wt["tags"]["name"] for wt in (r.get("word_tags") or []) if wt.get("tags")]
             translations = r.get("translations") or []
             if not translations:
                 continue
-            words.append({
-                "id": r["id"],
-                "german": r["german"],
-                "word_type": r.get("word_type"),
-                "translations": [
-                    {"language": t["language"], "translation": t["translation"]}
-                    for t in translations
-                ],
-                "tags": tags,
-            })
+            words.append(
+                {
+                    "id": r["id"],
+                    "german": r["german"],
+                    "word_type": r.get("word_type"),
+                    "translations": [
+                        {"language": t["language"], "translation": t["translation"]}
+                        for t in translations
+                    ],
+                    "tags": tags,
+                }
+            )
 
-        return json.dumps({
-            "words": words,
-            "total": len(words),
-            "prompt": _prompt,
-            "requested_count": _count,
-            "requested_types": _types,
-        }, indent=2)
+        return json.dumps(
+            {
+                "words": words,
+                "total": len(words),
+                "prompt": _prompt,
+                "requested_count": _count,
+                "requested_types": _types,
+            },
+            indent=2,
+        )
 
     async def fetch_all_translations(limit: int = 100) -> str:
         """Fetch a broad set of translations to use as distractors for multiple-choice questions.
@@ -140,16 +138,18 @@ def make_quiz_tools(
         - ``hint``: an optional hint string (can be empty)
         """
         for q in quiz_questions:
-            questions.append({
-                "id": q.get("id", f"q{len(questions)+1}"),
-                "type": q.get("type", "flashcard"),
-                "prompt": q.get("prompt", ""),
-                "german": q.get("german", ""),
-                "answer": q.get("answer", ""),
-                "options": q.get("options", []),
-                "word_id": q.get("word_id", ""),
-                "hint": q.get("hint", ""),
-            })
+            questions.append(
+                {
+                    "id": q.get("id", f"q{len(questions)+1}"),
+                    "type": q.get("type", "flashcard"),
+                    "prompt": q.get("prompt", ""),
+                    "german": q.get("german", ""),
+                    "answer": q.get("answer", ""),
+                    "options": q.get("options", []),
+                    "word_id": q.get("word_id", ""),
+                    "hint": q.get("hint", ""),
+                }
+            )
         logger.info("Quiz built with %d questions", len(questions))
         return f"Quiz recorded with {len(questions)} questions."
 

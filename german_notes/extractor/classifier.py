@@ -23,7 +23,6 @@ A message is treated as a full German sentence when:
 """
 
 import re
-from typing import Optional
 
 from langdetect import DetectorFactory, LangDetectException, detect, detect_langs
 
@@ -45,14 +44,62 @@ _GERMAN_CHARS = set("äöüßÄÖÜ")
 
 # High-frequency German function words
 _GERMAN_MARKERS = {
-    "der", "die", "das", "ein", "eine", "einen", "einem", "einer", "eines",
-    "ich", "du", "er", "sie", "es", "wir", "ihr",
-    "ist", "sind", "war", "bist", "bin", "wird", "werden",
-    "nicht", "und", "oder", "aber", "auch", "noch", "schon",
-    "mit", "von", "zu", "an", "auf", "in", "bei", "nach", "aus",
-    "haben", "sein", "können", "müssen", "wollen", "dürfen", "sollen",
-    "dein", "mein", "ihr", "sein", "unser", "euer", "kein",
-    "gut", "guten", "gute", "deutsch", "morgen",
+    "der",
+    "die",
+    "das",
+    "ein",
+    "eine",
+    "einen",
+    "einem",
+    "einer",
+    "eines",
+    "ich",
+    "du",
+    "er",
+    "sie",
+    "es",
+    "wir",
+    "ihr",
+    "ist",
+    "sind",
+    "war",
+    "bist",
+    "bin",
+    "wird",
+    "werden",
+    "nicht",
+    "und",
+    "oder",
+    "aber",
+    "auch",
+    "noch",
+    "schon",
+    "mit",
+    "von",
+    "zu",
+    "an",
+    "auf",
+    "in",
+    "bei",
+    "nach",
+    "aus",
+    "haben",
+    "sein",
+    "können",
+    "müssen",
+    "wollen",
+    "dürfen",
+    "sollen",
+    "dein",
+    "mein",
+    "unser",
+    "euer",
+    "kein",
+    "gut",
+    "guten",
+    "gute",
+    "deutsch",
+    "morgen",
 }
 
 # Common German word endings that are rare in other languages
@@ -68,7 +115,7 @@ _GERMAN_PROB_THRESHOLD = 0.15
 
 
 def _german_probability(text: str) -> float:
-    """Return the langdetect probability that *text* is German (0.0–1.0)."""
+    """Return the langdetect probability that *text* is German (0.0-1.0)."""
     try:
         langs = detect_langs(text.strip())
         for lang in langs:
@@ -102,7 +149,7 @@ def _detect_lang(text: str) -> str:
         return "unknown"
 
 
-def _try_vocab_pair(message: Message) -> Optional[VocabPair]:
+def _try_vocab_pair(message: Message) -> VocabPair | None:
     """Return a VocabPair if *message* matches the word = translation pattern."""
     text = message.text.strip()
 
@@ -164,7 +211,7 @@ def _try_vocab_pair(message: Message) -> Optional[VocabPair]:
     return None
 
 
-def _try_german_sentence(message: Message) -> Optional[GermanSentence]:
+def _try_german_sentence(message: Message) -> GermanSentence | None:
     """Return a GermanSentence if *message* is a full German sentence."""
     text = message.text.strip()
 

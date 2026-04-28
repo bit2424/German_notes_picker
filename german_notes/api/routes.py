@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import anthropic
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
@@ -114,7 +114,7 @@ async def update_chat(chat_id: str, fields: dict = Body(...)):
 
 @router.delete("/chats/{chat_id}")
 async def delete_chat(chat_id: str):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     result = (
         get_supabase()
         .table("chats")
@@ -156,9 +156,7 @@ async def send_chat_message(
         .limit(20)
         .execute()
     )
-    chat_history = [
-        {"role": m["role"], "content": m["content"]} for m in history_resp.data
-    ]
+    chat_history = [{"role": m["role"], "content": m["content"]} for m in history_resp.data]
 
     get_supabase().table("chat_messages").insert(
         {
@@ -175,7 +173,7 @@ async def send_chat_message(
         agent_result = await run_agent(message, uploaded, chat_history, enrich=enrich_mode)
     except Exception as exc:
         logger.exception("Agent error")
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     assistant_reply = agent_result["reply"]
     intake_proposals = agent_result.get("intake_proposals", [])
@@ -184,7 +182,7 @@ async def send_chat_message(
         {"chat_id": chat_id, "role": "assistant", "content": assistant_reply}
     ).execute()
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     get_supabase().table("chats").update({"updated_at": now}).eq("id", chat_id).execute()
 
     response: dict = {"reply": assistant_reply}
@@ -247,7 +245,7 @@ async def update_word(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/words/{item_id}")
 async def delete_word(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     result = (
         get_supabase()
         .table("words")
@@ -314,7 +312,7 @@ async def update_translation(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/translations/{item_id}")
 async def delete_translation(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     result = (
         get_supabase()
         .table("translations")
@@ -351,10 +349,10 @@ async def suggest_translations(body: dict = Body(...)):
         return json.loads(raw)
     except (json.JSONDecodeError, IndexError, KeyError) as exc:
         logger.exception("Failed to parse suggestion response")
-        raise HTTPException(status_code=502, detail=f"Bad LLM response: {exc}")
+        raise HTTPException(status_code=502, detail=f"Bad LLM response: {exc}") from exc
     except anthropic.APIError as exc:
         logger.exception("Anthropic API error")
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 # ── Batch word storage ───────────────────────────────
@@ -379,16 +377,18 @@ async def batch_store_words(body: dict = Body(...)):
     word_result = sb.table("words").insert(word_rows).execute()
 
     translation_rows = []
-    for w, word_data in zip(words, word_result.data):
+    for w, word_data in zip(words, word_result.data, strict=False):
         for t in w.get("translations", []):
             lang = t.get("language", "es")
             if lang not in ("es", "en"):
                 lang = "es"
-            translation_rows.append({
-                "word_id": word_data["id"],
-                "language": lang,
-                "translation": t["translation"],
-            })
+            translation_rows.append(
+                {
+                    "word_id": word_data["id"],
+                    "language": lang,
+                    "translation": t["translation"],
+                }
+            )
 
     if translation_rows:
         sb.table("translations").insert(translation_rows).execute()
@@ -438,7 +438,7 @@ async def update_text(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/texts/{item_id}")
 async def delete_text(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     result = (
         get_supabase()
         .table("texts")
@@ -471,7 +471,14 @@ async def create_text(fields: dict = Body(...)):
 @router.get("/words/{item_id}")
 async def get_word_detail(item_id: str):
     sb = get_supabase()
-    word = sb.table("words").select("*, translations(*)").eq("id", item_id).is_("deleted_at", "null").single().execute()
+    word = (
+        sb.table("words")
+        .select("*, translations(*)")
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .single()
+        .execute()
+    )
     if not word.data:
         raise HTTPException(status_code=404, detail="Word not found")
 
@@ -479,25 +486,64 @@ async def get_word_detail(item_id: str):
     wt = data.get("word_type", "other")
 
     if wt == "verb":
-        vd = sb.table("verb_details").select("*").eq("word_id", item_id).is_("deleted_at", "null").execute()
+        vd = (
+            sb.table("verb_details")
+            .select("*")
+            .eq("word_id", item_id)
+            .is_("deleted_at", "null")
+            .execute()
+        )
         data["verb_details"] = vd.data[0] if vd.data else None
     elif wt == "noun":
-        nd = sb.table("noun_details").select("*").eq("word_id", item_id).is_("deleted_at", "null").execute()
+        nd = (
+            sb.table("noun_details")
+            .select("*")
+            .eq("word_id", item_id)
+            .is_("deleted_at", "null")
+            .execute()
+        )
         data["noun_details"] = nd.data[0] if nd.data else None
     elif wt == "adjective":
-        ad = sb.table("adjective_declensions").select("*").eq("word_id", item_id).is_("deleted_at", "null").execute()
+        ad = (
+            sb.table("adjective_declensions")
+            .select("*")
+            .eq("word_id", item_id)
+            .is_("deleted_at", "null")
+            .execute()
+        )
         data["adjective_declensions"] = ad.data
 
-    expl = sb.table("explanations").select("*").eq("entity_type", "word").eq("entity_id", item_id).is_("deleted_at", "null").execute()
+    expl = (
+        sb.table("explanations")
+        .select("*")
+        .eq("entity_type", "word")
+        .eq("entity_id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     for e in expl.data:
-        et = sb.table("explanation_tags").select("tag_id, tags(id, name)").eq("explanation_id", e["id"]).execute()
+        et = (
+            sb.table("explanation_tags")
+            .select("tag_id, tags(id, name)")
+            .eq("explanation_id", e["id"])
+            .execute()
+        )
         e["tags"] = [row["tags"] for row in et.data] if et.data else []
     data["explanations"] = expl.data
 
-    wt_resp = sb.table("word_tags").select("tag_id, tags(id, name)").eq("word_id", item_id).execute()
+    wt_resp = (
+        sb.table("word_tags").select("tag_id, tags(id, name)").eq("word_id", item_id).execute()
+    )
     data["tags"] = [row["tags"] for row in wt_resp.data] if wt_resp.data else []
 
-    corr = sb.table("corrections").select("*").eq("word_id", item_id).is_("deleted_at", "null").order("created_at", desc=True).execute()
+    corr = (
+        sb.table("corrections")
+        .select("*")
+        .eq("word_id", item_id)
+        .is_("deleted_at", "null")
+        .order("created_at", desc=True)
+        .execute()
+    )
     data["corrections"] = corr.data
 
     return data
@@ -509,28 +555,62 @@ async def get_word_detail(item_id: str):
 @router.get("/texts/{item_id}")
 async def get_text_detail(item_id: str):
     sb = get_supabase()
-    text = sb.table("texts").select("*").eq("id", item_id).is_("deleted_at", "null").single().execute()
+    text = (
+        sb.table("texts").select("*").eq("id", item_id).is_("deleted_at", "null").single().execute()
+    )
     if not text.data:
         raise HTTPException(status_code=404, detail="Text not found")
 
     data = text.data
 
-    transl = sb.table("translations").select("*").eq("text_id", item_id).is_("deleted_at", "null").execute()
+    transl = (
+        sb.table("translations")
+        .select("*")
+        .eq("text_id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     data["translations"] = transl.data
 
-    expl = sb.table("explanations").select("*").eq("entity_type", "text").eq("entity_id", item_id).is_("deleted_at", "null").execute()
+    expl = (
+        sb.table("explanations")
+        .select("*")
+        .eq("entity_type", "text")
+        .eq("entity_id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     for e in expl.data:
-        et = sb.table("explanation_tags").select("tag_id, tags(id, name)").eq("explanation_id", e["id"]).execute()
+        et = (
+            sb.table("explanation_tags")
+            .select("tag_id, tags(id, name)")
+            .eq("explanation_id", e["id"])
+            .execute()
+        )
         e["tags"] = [row["tags"] for row in et.data] if et.data else []
     data["explanations"] = expl.data
 
     tt = sb.table("text_tags").select("tag_id, tags(id, name)").eq("text_id", item_id).execute()
     data["tags"] = [row["tags"] for row in tt.data] if tt.data else []
 
-    corr = sb.table("corrections").select("*").eq("text_id", item_id).is_("deleted_at", "null").order("created_at", desc=True).execute()
+    corr = (
+        sb.table("corrections")
+        .select("*")
+        .eq("text_id", item_id)
+        .is_("deleted_at", "null")
+        .order("created_at", desc=True)
+        .execute()
+    )
     data["corrections"] = corr.data
 
-    tw = sb.table("text_words").select("*, words(id, german)").eq("text_id", item_id).is_("deleted_at", "null").order("position").execute()
+    tw = (
+        sb.table("text_words")
+        .select("*, words(id, german)")
+        .eq("text_id", item_id)
+        .is_("deleted_at", "null")
+        .order("position")
+        .execute()
+    )
     data["text_words"] = tw.data
 
     return data
@@ -559,8 +639,25 @@ async def create_word(fields: dict = Body(...)):
 @router.post("/words/{word_id}/verb-details")
 async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
     sb = get_supabase()
-    existing = sb.table("verb_details").select("id").eq("word_id", word_id).is_("deleted_at", "null").execute()
-    allowed_verb = ("infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie", "case_rule", "is_reflexive")
+    existing = (
+        sb.table("verb_details")
+        .select("id")
+        .eq("word_id", word_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
+    allowed_verb = (
+        "infinitive",
+        "participle",
+        "present_ich",
+        "present_du",
+        "present_er",
+        "present_wir",
+        "present_ihr",
+        "present_sie",
+        "case_rule",
+        "is_reflexive",
+    )
     row = {k: v for k, v in fields.items() if k in allowed_verb}
     if existing.data:
         result = sb.table("verb_details").update(row).eq("id", existing.data[0]["id"]).execute()
@@ -572,11 +669,29 @@ async def upsert_verb_details(word_id: str, fields: dict = Body(...)):
 
 @router.patch("/verb-details/{item_id}")
 async def update_verb_details(item_id: str, fields: dict = Body(...)):
-    allowed = {"infinitive", "participle", "present_ich", "present_du", "present_er", "present_wir", "present_ihr", "present_sie", "case_rule", "is_reflexive"}
+    allowed = {
+        "infinitive",
+        "participle",
+        "present_ich",
+        "present_du",
+        "present_er",
+        "present_wir",
+        "present_ihr",
+        "present_sie",
+        "case_rule",
+        "is_reflexive",
+    }
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    result = get_supabase().table("verb_details").update(updates).eq("id", item_id).is_("deleted_at", "null").execute()
+    result = (
+        get_supabase()
+        .table("verb_details")
+        .update(updates)
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Verb details not found")
     return result.data[0]
@@ -584,8 +699,15 @@ async def update_verb_details(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/verb-details/{item_id}")
 async def delete_verb_details(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("verb_details").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("verb_details")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Verb details not found")
     return {"ok": True}
@@ -597,7 +719,13 @@ async def delete_verb_details(item_id: str):
 @router.post("/words/{word_id}/noun-details")
 async def upsert_noun_details(word_id: str, fields: dict = Body(...)):
     sb = get_supabase()
-    existing = sb.table("noun_details").select("id").eq("word_id", word_id).is_("deleted_at", "null").execute()
+    existing = (
+        sb.table("noun_details")
+        .select("id")
+        .eq("word_id", word_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     row = {k: v for k, v in fields.items() if k in ("article", "plural")}
     if existing.data:
         result = sb.table("noun_details").update(row).eq("id", existing.data[0]["id"]).execute()
@@ -613,7 +741,14 @@ async def update_noun_details(item_id: str, fields: dict = Body(...)):
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    result = get_supabase().table("noun_details").update(updates).eq("id", item_id).is_("deleted_at", "null").execute()
+    result = (
+        get_supabase()
+        .table("noun_details")
+        .update(updates)
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Noun details not found")
     return result.data[0]
@@ -621,8 +756,15 @@ async def update_noun_details(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/noun-details/{item_id}")
 async def delete_noun_details(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("noun_details").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("noun_details")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Noun details not found")
     return {"ok": True}
@@ -649,7 +791,14 @@ async def update_adjective_declension(item_id: str, fields: dict = Body(...)):
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    result = get_supabase().table("adjective_declensions").update(updates).eq("id", item_id).is_("deleted_at", "null").execute()
+    result = (
+        get_supabase()
+        .table("adjective_declensions")
+        .update(updates)
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Adjective declension not found")
     return result.data[0]
@@ -657,8 +806,15 @@ async def update_adjective_declension(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/adjective-declensions/{item_id}")
 async def delete_adjective_declension(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("adjective_declensions").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("adjective_declensions")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Adjective declension not found")
     return {"ok": True}
@@ -673,7 +829,9 @@ async def create_explanation(fields: dict = Body(...)):
     entity_id = fields.get("entity_id")
     content = fields.get("content", "").strip()
     if not entity_type or not entity_id or not content:
-        raise HTTPException(status_code=400, detail="entity_type, entity_id, and content are required")
+        raise HTTPException(
+            status_code=400, detail="entity_type, entity_id, and content are required"
+        )
     row = {"entity_type": entity_type, "entity_id": entity_id, "content": content}
     result = get_supabase().table("explanations").insert(row).execute()
     return result.data[0]
@@ -685,7 +843,14 @@ async def update_explanation(item_id: str, fields: dict = Body(...)):
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    result = get_supabase().table("explanations").update(updates).eq("id", item_id).is_("deleted_at", "null").execute()
+    result = (
+        get_supabase()
+        .table("explanations")
+        .update(updates)
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Explanation not found")
     return result.data[0]
@@ -693,8 +858,15 @@ async def update_explanation(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/explanations/{item_id}")
 async def delete_explanation(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("explanations").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("explanations")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Explanation not found")
     return {"ok": True}
@@ -705,7 +877,9 @@ async def delete_explanation(item_id: str):
 
 @router.get("/tags")
 async def list_tags():
-    result = get_supabase().table("tags").select("*").is_("deleted_at", "null").order("name").execute()
+    result = (
+        get_supabase().table("tags").select("*").is_("deleted_at", "null").order("name").execute()
+    )
     return {"tags": result.data}
 
 
@@ -720,8 +894,15 @@ async def create_tag(fields: dict = Body(...)):
 
 @router.delete("/tags/{item_id}")
 async def delete_tag(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("tags").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("tags")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Tag not found")
     return {"ok": True}
@@ -735,7 +916,9 @@ async def add_word_tag(word_id: str, fields: dict = Body(...)):
     tag_id = fields.get("tag_id")
     if not tag_id:
         raise HTTPException(status_code=400, detail="tag_id is required")
-    result = get_supabase().table("word_tags").insert({"word_id": word_id, "tag_id": tag_id}).execute()
+    result = (
+        get_supabase().table("word_tags").insert({"word_id": word_id, "tag_id": tag_id}).execute()
+    )
     return result.data[0]
 
 
@@ -750,7 +933,9 @@ async def add_text_tag(text_id: str, fields: dict = Body(...)):
     tag_id = fields.get("tag_id")
     if not tag_id:
         raise HTTPException(status_code=400, detail="tag_id is required")
-    result = get_supabase().table("text_tags").insert({"text_id": text_id, "tag_id": tag_id}).execute()
+    result = (
+        get_supabase().table("text_tags").insert({"text_id": text_id, "tag_id": tag_id}).execute()
+    )
     return result.data[0]
 
 
@@ -765,13 +950,20 @@ async def add_explanation_tag(expl_id: str, fields: dict = Body(...)):
     tag_id = fields.get("tag_id")
     if not tag_id:
         raise HTTPException(status_code=400, detail="tag_id is required")
-    result = get_supabase().table("explanation_tags").insert({"explanation_id": expl_id, "tag_id": tag_id}).execute()
+    result = (
+        get_supabase()
+        .table("explanation_tags")
+        .insert({"explanation_id": expl_id, "tag_id": tag_id})
+        .execute()
+    )
     return result.data[0]
 
 
 @router.delete("/explanations/{expl_id}/tags/{tag_id}")
 async def remove_explanation_tag(expl_id: str, tag_id: str):
-    get_supabase().table("explanation_tags").delete().eq("explanation_id", expl_id).eq("tag_id", tag_id).execute()
+    get_supabase().table("explanation_tags").delete().eq("explanation_id", expl_id).eq(
+        "tag_id", tag_id
+    ).execute()
     return {"ok": True}
 
 
@@ -810,7 +1002,14 @@ async def update_correction(item_id: str, fields: dict = Body(...)):
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    result = get_supabase().table("corrections").update(updates).eq("id", item_id).is_("deleted_at", "null").execute()
+    result = (
+        get_supabase()
+        .table("corrections")
+        .update(updates)
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Correction not found")
     return result.data[0]
@@ -818,8 +1017,15 @@ async def update_correction(item_id: str, fields: dict = Body(...)):
 
 @router.delete("/corrections/{item_id}")
 async def delete_correction(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("corrections").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("corrections")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Correction not found")
     return {"ok": True}
@@ -840,8 +1046,15 @@ async def link_text_word(text_id: str, fields: dict = Body(...)):
 
 @router.delete("/text-words/{item_id}")
 async def unlink_text_word(item_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    result = get_supabase().table("text_words").update({"deleted_at": now}).eq("id", item_id).is_("deleted_at", "null").execute()
+    now = datetime.now(UTC).isoformat()
+    result = (
+        get_supabase()
+        .table("text_words")
+        .update({"deleted_at": now})
+        .eq("id", item_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Text-word link not found")
     return {"ok": True}
@@ -874,9 +1087,9 @@ async def generate_quiz(body: dict = Body(...)):
             count=count,
             types=types,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("Quiz generator agent failed")
-        raise HTTPException(status_code=502, detail="Quiz generator agent failed")
+        raise HTTPException(status_code=502, detail="Quiz generator agent failed") from exc
 
     return {"questions": questions}
 
@@ -908,9 +1121,9 @@ async def generate_and_save_quizlet(body: dict = Body(...)):
             count=pool_count,
             types=types,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("Quiz generator agent failed")
-        raise HTTPException(status_code=502, detail="Quiz generator agent failed")
+        raise HTTPException(status_code=502, detail="Quiz generator agent failed") from exc
 
     if not questions:
         raise HTTPException(status_code=422, detail="No questions could be generated")
@@ -957,7 +1170,7 @@ async def start_quiz_run(quizlet_id: str, body: dict = Body(...)):
     try:
         run = create_quiz_run(quizlet_id, question_count=qcount)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return run
 
 
@@ -969,7 +1182,7 @@ async def finish_quiz_run(run_id: str, body: dict = Body(...)):
     try:
         run = complete_quiz_run(run_id, answers)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     return run
 
 
@@ -1003,11 +1216,13 @@ async def propose_word_enrichments(body: dict = Body(...)):
         raise HTTPException(status_code=400, detail="word_ids must be an array")
     try:
         proposals = await run_enricher_propose(
-            limit=limit, filter_type=filter_type, word_ids=word_ids or None,
+            limit=limit,
+            filter_type=filter_type,
+            word_ids=word_ids or None,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("Enricher agent failed")
-        raise HTTPException(status_code=502, detail="Enricher agent failed")
+        raise HTTPException(status_code=502, detail="Enricher agent failed") from exc
     return {"proposals": proposals}
 
 
@@ -1034,19 +1249,23 @@ async def apply_intake_proposals(body: dict = Body(...)):
         german = proposal.get("german", "?")
         try:
             record = insert_word_complete(proposal)
-            details.append({
-                "word_id": record["id"],
-                "german": german,
-                "word_type": proposal.get("word_type", "other"),
-                "ok": True,
-            })
+            details.append(
+                {
+                    "word_id": record["id"],
+                    "german": german,
+                    "word_type": proposal.get("word_type", "other"),
+                    "ok": True,
+                }
+            )
         except Exception:
             logger.exception("Intake apply failed for '%s'", german)
-            details.append({
-                "german": german,
-                "word_type": proposal.get("word_type", "other"),
-                "ok": False,
-            })
+            details.append(
+                {
+                    "german": german,
+                    "word_type": proposal.get("word_type", "other"),
+                    "ok": False,
+                }
+            )
 
     applied = sum(1 for d in details if d["ok"])
     return {"applied": applied, "total": len(approved), "details": details}

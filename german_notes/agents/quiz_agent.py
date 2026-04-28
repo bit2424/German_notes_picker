@@ -95,8 +95,8 @@ async def run_quiz_generate(
     """
     model_client = get_model_client()
 
-    questions, fetch_words_for_quiz, fetch_all_translations, build_quiz = (
-        make_quiz_tools(tag_ids=tag_ids, prompt=prompt, count=count, types=types)
+    questions, fetch_words_for_quiz, fetch_all_translations, build_quiz = make_quiz_tools(
+        tag_ids=tag_ids, prompt=prompt, count=count, types=types
     )
 
     agent = AssistantAgent(
@@ -110,7 +110,7 @@ async def run_quiz_generate(
 
     parts = []
     if prompt:
-        parts.append(f"User prompt: \"{prompt}\"")
+        parts.append(f'User prompt: "{prompt}"')
     if tag_ids:
         parts.append(f"Filter by tag IDs: {tag_ids}")
     parts.append(f"Generate {count} questions.")
@@ -129,7 +129,8 @@ async def run_quiz_generate(
             final_text = str(response.chat_message.content)[:300]
         logger.info(
             "Quiz generator finished: %d questions. Response: %s",
-            len(questions), final_text,
+            len(questions),
+            final_text,
         )
     except Exception:
         logger.exception("Quiz generator agent error")

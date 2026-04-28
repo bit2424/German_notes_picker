@@ -8,15 +8,22 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from german_notes.api.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
 WORD_TABLES = (
-    "words", "translations", "verb_details", "noun_details",
-    "adjective_declensions", "word_tags", "tags", "explanations",
+    "words",
+    "translations",
+    "verb_details",
+    "noun_details",
+    "adjective_declensions",
+    "word_tags",
+    "tags",
+    "explanations",
 )
 
 _SCHEMA: dict[str, Any] = {
@@ -37,7 +44,8 @@ _SCHEMA: dict[str, Any] = {
             "translations (1:N via translations.word_id)",
             "verb_details (1:1 via verb_details.word_id, only when word_type='verb')",
             "noun_details (1:1 via noun_details.word_id, only when word_type='noun')",
-            "adjective_declensions (1:N via adjective_declensions.word_id, only when word_type='adjective')",
+            "adjective_declensions (1:N via adjective_declensions.word_id, "
+            "only when word_type='adjective')",
             "word_tags (M:N via word_tags junction -> tags)",
             "explanations (1:N polymorphic via explanations where entity_type='word')",
         ],
@@ -83,7 +91,9 @@ _SCHEMA: dict[str, Any] = {
             "gender": "text ('maskulin' | 'feminin' | 'neutrum' | 'plural')",
             "form": "text (the declined form)",
         },
-        "notes": "Only for words where word_type='adjective'. Unique on (word_id, case_type, gender).",
+        "notes": (
+            "Only for words where word_type='adjective'. " "Unique on (word_id, case_type, gender)."
+        ),
     },
     "tags": {
         "columns": {
@@ -106,7 +116,7 @@ _SCHEMA: dict[str, Any] = {
             "content": "text NOT NULL",
         },
         "notes": "For word explanations, use entity_type='word' and entity_id=word.id. "
-                 "Content should be a brief usage note or context hint in English.",
+        "Content should be a brief usage note or context hint in English.",
     },
 }
 
@@ -208,19 +218,19 @@ def make_enricher_tools(
 
         results: list[dict[str, Any]] = []
         for r in rows:
-            tags = [
-                wt["tags"]
-                for wt in (r.get("word_tags") or [])
-                if wt.get("tags")
-            ]
+            tags = [wt["tags"] for wt in (r.get("word_tags") or []) if wt.get("tags")]
             word = {
                 "id": r["id"],
                 "german": r["german"],
                 "word_type": r.get("word_type"),
                 "source": r.get("source"),
                 "translations": r.get("translations") or [],
-                "verb_details": (r.get("verb_details") or [None])[0] if isinstance(r.get("verb_details"), list) else r.get("verb_details"),
-                "noun_details": (r.get("noun_details") or [None])[0] if isinstance(r.get("noun_details"), list) else r.get("noun_details"),
+                "verb_details": (r.get("verb_details") or [None])[0]
+                if isinstance(r.get("verb_details"), list)
+                else r.get("verb_details"),
+                "noun_details": (r.get("noun_details") or [None])[0]
+                if isinstance(r.get("noun_details"), list)
+                else r.get("noun_details"),
                 "adjective_declensions": r.get("adjective_declensions") or [],
                 "tags": tags,
                 "explanations": explanations_by_word.get(r["id"], []),
@@ -233,7 +243,9 @@ def make_enricher_tools(
 
         logger.info(
             "fetch_words_to_enrich: %d words (filter=%s, limit=%d)",
-            len(results), filter_type, limit,
+            len(results),
+            filter_type,
+            limit,
         )
         return json.dumps(results, indent=2)
 
@@ -283,9 +295,7 @@ def _matches_filter(word: dict[str, Any], filter_type: str) -> bool:
         wt = word.get("word_type")
         if wt == "verb" and not word.get("verb_details"):
             return True
-        if wt == "noun" and not word.get("noun_details"):
-            return True
-        return False
+        return bool(wt == "noun" and not word.get("noun_details"))
     if filter_type == "missing_tags":
         return len(word.get("tags", [])) == 0
 
@@ -302,6 +312,4 @@ def _matches_filter(word: dict[str, Any], filter_type: str) -> bool:
         return True
     if len(word.get("tags", [])) == 0:
         return True
-    if len(word.get("explanations", [])) == 0:
-        return True
-    return False
+    return len(word.get("explanations", [])) == 0

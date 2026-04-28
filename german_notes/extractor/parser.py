@@ -8,17 +8,17 @@ Where <time_word> is one of:
 """
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from german_notes.core.models import Message
 
 _LINE_RE = re.compile(
     r"^(\d{2}\.\d{2}\.\d{2}),\s+"  # date: DD.MM.YY
-    r"\d+:\d+\s+"                   # time: H:MM or HH:MM
-    r"\S+\s+-\s+"                   # time-of-day word + separator " - "
-    r"([^:]+):\s+"                  # sender name (everything before the first colon)
-    r"(.+)$"                        # message text
+    r"\d+:\d+\s+"  # time: H:MM or HH:MM
+    r"\S+\s+-\s+"  # time-of-day word + separator " - "
+    r"([^:]+):\s+"  # sender name (everything before the first colon)
+    r"(.+)$"  # message text
 )
 
 _SKIP_PATTERNS = (

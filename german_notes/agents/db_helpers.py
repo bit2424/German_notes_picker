@@ -13,10 +13,16 @@ from german_notes.api.supabase_client import get_supabase
 
 def upsert_verb_details(sb, word_id: str, fields: dict[str, str]) -> None:
     allowed = (
-        "infinitive", "participle",
-        "present_ich", "present_du", "present_er",
-        "present_wir", "present_ihr", "present_sie",
-        "case_rule", "is_reflexive",
+        "infinitive",
+        "participle",
+        "present_ich",
+        "present_du",
+        "present_er",
+        "present_wir",
+        "present_ihr",
+        "present_sie",
+        "case_rule",
+        "is_reflexive",
     )
     row = {k: v for k, v in fields.items() if k in allowed and v}
     if not row:
@@ -57,22 +63,10 @@ def upsert_noun_details(sb, word_id: str, fields: dict[str, str]) -> None:
 
 def assign_tags(sb, word_id: str, tag_names: list[str]) -> int:
     """Find-or-create tags by name and link them to the word. Returns count of new links."""
-    existing_tags = (
-        sb.table("tags")
-        .select("id, name")
-        .is_("deleted_at", "null")
-        .execute()
-        .data
-    )
+    existing_tags = sb.table("tags").select("id, name").is_("deleted_at", "null").execute().data
     name_to_id = {t["name"].lower(): t["id"] for t in existing_tags}
 
-    existing_links = (
-        sb.table("word_tags")
-        .select("tag_id")
-        .eq("word_id", word_id)
-        .execute()
-        .data
-    )
+    existing_links = sb.table("word_tags").select("tag_id").eq("word_id", word_id).execute().data
     linked_tag_ids = {link["tag_id"] for link in existing_links}
 
     count = 0
@@ -84,10 +78,12 @@ def assign_tags(sb, word_id: str, tag_names: list[str]) -> int:
             name_to_id[name.lower()] = tag_id
 
         if tag_id not in linked_tag_ids:
-            sb.table("word_tags").insert({
-                "word_id": word_id,
-                "tag_id": tag_id,
-            }).execute()
+            sb.table("word_tags").insert(
+                {
+                    "word_id": word_id,
+                    "tag_id": tag_id,
+                }
+            ).execute()
             linked_tag_ids.add(tag_id)
             count += 1
 
@@ -173,10 +169,12 @@ def insert_word_complete(word_data: dict[str, Any]) -> dict[str, Any]:
         assign_tags(sb, word_id, word_data["tags"])
 
     if word_data.get("explanation"):
-        sb.table("explanations").insert({
-            "entity_type": "word",
-            "entity_id": word_id,
-            "content": word_data["explanation"],
-        }).execute()
+        sb.table("explanations").insert(
+            {
+                "entity_type": "word",
+                "entity_id": word_id,
+                "content": word_data["explanation"],
+            }
+        ).execute()
 
     return word_record

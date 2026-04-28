@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,9 @@ def make_intake_tools() -> tuple[list[dict[str, Any]], Callable, Callable]:
             proposal["explanation"] = explanation
 
         proposals.append(proposal)
-        logger.info("Intake proposal recorded for '%s' (%s, total: %d)", german, word_type, len(proposals))
+        logger.info(
+            "Intake proposal recorded for '%s' (%s, total: %d)", german, word_type, len(proposals)
+        )
         return json.dumps({"german": german, "word_type": word_type, "proposed": True})
 
     async def propose_complete_text(

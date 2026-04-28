@@ -179,11 +179,18 @@ def _make_save_vocabulary_tool(
         result = await run_intake_agent(description, source=source)
         proposals = result.get("proposals", [])
         collected_proposals.extend(proposals)
-        logger.info("save_vocabulary collected %d proposals (total %d)", len(proposals), len(collected_proposals))
-        return json.dumps({
-            "proposed": len(proposals),
-            "summary": result.get("summary", ""),
-        }, ensure_ascii=False)
+        logger.info(
+            "save_vocabulary collected %d proposals (total %d)",
+            len(proposals),
+            len(collected_proposals),
+        )
+        return json.dumps(
+            {
+                "proposed": len(proposals),
+                "summary": result.get("summary", ""),
+            },
+            ensure_ascii=False,
+        )
 
     return save_vocabulary
 
@@ -286,7 +293,9 @@ async def run_agent(
     await model_client.close()
 
     reply_text = _extract_final_text(response)
-    logger.info("run_agent done: reply_len=%d, proposals=%d", len(reply_text), len(collected_proposals))
+    logger.info(
+        "run_agent done: reply_len=%d, proposals=%d", len(reply_text), len(collected_proposals)
+    )
 
     return {
         "reply": reply_text,

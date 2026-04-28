@@ -113,7 +113,8 @@ async def run_enricher_propose(
             final_text = str(response.chat_message.content)[:300]
         logger.info(
             "Enricher finished: %d proposals. Response: %s",
-            len(proposals), final_text,
+            len(proposals),
+            final_text,
         )
     except Exception:
         logger.exception("Enricher agent error")
@@ -127,6 +128,7 @@ async def run_enricher_propose(
 # ---------------------------------------------------------------------------
 # Apply approved enrichments (pure DB writes, no LLM)
 # ---------------------------------------------------------------------------
+
 
 async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
     """Write user-approved enrichment proposals to Supabase.
@@ -143,9 +145,9 @@ async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
 
         try:
             if "word_type" in proposal:
-                sb.table("words").update(
-                    {"word_type": proposal["word_type"]}
-                ).eq("id", word_id).is_("deleted_at", "null").execute()
+                sb.table("words").update({"word_type": proposal["word_type"]}).eq(
+                    "id", word_id
+                ).is_("deleted_at", "null").execute()
                 actions.append(f"word_type={proposal['word_type']}")
 
             if "translations" in proposal:
@@ -157,20 +159,19 @@ async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
                     .execute()
                     .data
                 )
-                existing_set = {
-                    (t["language"], t["translation"].lower())
-                    for t in existing
-                }
+                existing_set = {(t["language"], t["translation"].lower()) for t in existing}
 
                 new_translations = []
                 for t in proposal["translations"]:
                     key = (t["language"], t["translation"].lower())
                     if key not in existing_set:
-                        new_translations.append({
-                            "word_id": word_id,
-                            "language": t["language"],
-                            "translation": t["translation"],
-                        })
+                        new_translations.append(
+                            {
+                                "word_id": word_id,
+                                "language": t["language"],
+                                "translation": t["translation"],
+                            }
+                        )
 
                 if new_translations:
                     sb.table("translations").insert(new_translations).execute()
@@ -190,27 +191,33 @@ async def apply_enrichments(approved: list[dict[str, Any]]) -> dict[str, Any]:
                     actions.append(f"+{count} tags")
 
             if "explanation" in proposal:
-                sb.table("explanations").insert({
-                    "entity_type": "word",
-                    "entity_id": word_id,
-                    "content": proposal["explanation"],
-                }).execute()
+                sb.table("explanations").insert(
+                    {
+                        "entity_type": "word",
+                        "entity_id": word_id,
+                        "content": proposal["explanation"],
+                    }
+                ).execute()
                 actions.append("explanation")
 
-            details.append({
-                "word_id": word_id,
-                "german": german,
-                "actions": actions,
-                "ok": True,
-            })
+            details.append(
+                {
+                    "word_id": word_id,
+                    "german": german,
+                    "actions": actions,
+                    "ok": True,
+                }
+            )
         except Exception:
             logger.exception("Failed to apply enrichment for word %s", word_id)
-            details.append({
-                "word_id": word_id,
-                "german": german,
-                "actions": actions,
-                "ok": False,
-            })
+            details.append(
+                {
+                    "word_id": word_id,
+                    "german": german,
+                    "actions": actions,
+                    "ok": False,
+                }
+            )
 
     applied = sum(1 for d in details if d["ok"])
     return {"applied": applied, "total": len(approved), "details": details}

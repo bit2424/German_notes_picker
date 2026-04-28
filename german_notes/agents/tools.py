@@ -18,13 +18,14 @@ from german_notes.extractor.classifier import classify
 from german_notes.extractor.parser import parse_file
 from german_notes.ocr.client import extract_from_image as ocr_extract
 
-
 # ---------------------------------------------------------------------------
 # Shared pipeline: classify lines -> store in Supabase
 # ---------------------------------------------------------------------------
 
+
 def _store_word_rows(
-    vocab_pairs: list[VocabPair], source: str,
+    vocab_pairs: list[VocabPair],
+    source: str,
 ) -> int:
     if not vocab_pairs:
         return 0
@@ -43,13 +44,15 @@ def _store_word_rows(
     word_res = sb.table("words").insert(word_rows).execute()
 
     translation_rows = []
-    for vp, word_data in zip(vocab_pairs, word_res.data):
+    for vp, word_data in zip(vocab_pairs, word_res.data, strict=False):
         lang = vp.translation_lang if vp.translation_lang in ("es", "en") else "es"
-        translation_rows.append({
-            "word_id": word_data["id"],
-            "language": lang,
-            "translation": vp.translation,
-        })
+        translation_rows.append(
+            {
+                "word_id": word_data["id"],
+                "language": lang,
+                "translation": vp.translation,
+            }
+        )
 
     if translation_rows:
         sb.table("translations").insert(translation_rows).execute()
@@ -58,7 +61,8 @@ def _store_word_rows(
 
 
 def _store_text_rows(
-    sentences: list[GermanSentence], source: str,
+    sentences: list[GermanSentence],
+    source: str,
 ) -> int:
     if not sentences:
         return 0
@@ -145,6 +149,7 @@ def classify_messages_and_store(
 # AutoGen tool functions (called by the AssistantAgent)
 # ---------------------------------------------------------------------------
 
+
 async def store_words(entries: list[dict[str, str]]) -> str:
     """Store one or more German words with their translations.
 
@@ -166,23 +171,27 @@ async def store_words(entries: list[dict[str, str]]) -> str:
     word_result = sb.table("words").insert(word_rows).execute()
 
     translation_rows = []
-    for e, word_data in zip(entries, word_result.data):
+    for e, word_data in zip(entries, word_result.data, strict=False):
         lang = e.get("translation_lang", "es")
         if lang not in ("es", "en"):
             lang = "es"
-        translation_rows.append({
-            "word_id": word_data["id"],
-            "language": lang,
-            "translation": e["translation"],
-        })
+        translation_rows.append(
+            {
+                "word_id": word_data["id"],
+                "language": lang,
+                "translation": e["translation"],
+            }
+        )
 
     if translation_rows:
         sb.table("translations").insert(translation_rows).execute()
 
-    return json.dumps({
-        "stored": len(word_result.data),
-        "items": [r["german"] for r in word_result.data],
-    })
+    return json.dumps(
+        {
+            "stored": len(word_result.data),
+            "items": [r["german"] for r in word_result.data],
+        }
+    )
 
 
 async def store_texts(entries: list[dict[str, str]]) -> str:
@@ -207,6 +216,7 @@ async def store_texts(entries: list[dict[str, str]]) -> str:
 # ---------------------------------------------------------------------------
 # File-dependent tools (created per-request via closure)
 # ---------------------------------------------------------------------------
+
 
 def make_file_tools(uploaded_files: dict[str, bytes]):
     """Return tool functions that capture *uploaded_files* for file access."""

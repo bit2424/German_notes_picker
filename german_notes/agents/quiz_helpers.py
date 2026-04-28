@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from german_notes.api.supabase_client import get_supabase
@@ -46,17 +46,19 @@ def save_quizlet(
     if questions:
         q_rows = []
         for i, q in enumerate(questions):
-            q_rows.append({
-                "quizlet_id": quizlet_id,
-                "position": i,
-                "type": q.get("type", "flashcard"),
-                "prompt": q.get("prompt", ""),
-                "german": q.get("german", ""),
-                "answer": q.get("answer", ""),
-                "options": json.dumps(q.get("options", [])),
-                "hint": q.get("hint", ""),
-                "word_id": q.get("word_id") or None,
-            })
+            q_rows.append(
+                {
+                    "quizlet_id": quizlet_id,
+                    "position": i,
+                    "type": q.get("type", "flashcard"),
+                    "prompt": q.get("prompt", ""),
+                    "german": q.get("german", ""),
+                    "answer": q.get("answer", ""),
+                    "options": json.dumps(q.get("options", [])),
+                    "hint": q.get("hint", ""),
+                    "word_id": q.get("word_id") or None,
+                }
+            )
         sb.table("quizlet_questions").insert(q_rows).execute()
 
     if tag_ids:
@@ -107,11 +109,7 @@ def get_quizlet_detail(quizlet_id: str) -> dict[str, Any] | None:
     """Fetch a single quizlet with its full question pool and tag links."""
     sb = get_supabase()
     result = (
-        sb.table("quizlets")
-        .select("*")
-        .eq("id", quizlet_id)
-        .is_("deleted_at", "null")
-        .execute()
+        sb.table("quizlets").select("*").eq("id", quizlet_id).is_("deleted_at", "null").execute()
     )
     if not result.data:
         return None
@@ -188,7 +186,7 @@ def create_quiz_run(
         sampled = all_questions
         question_count = len(all_questions)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     run_row = {
         "quizlet_id": quizlet_id,
         "question_count": question_count,
@@ -208,17 +206,13 @@ def complete_quiz_run(
     sb = get_supabase()
 
     run_result = (
-        sb.table("quiz_runs")
-        .select("*")
-        .eq("id", run_id)
-        .is_("deleted_at", "null")
-        .execute()
+        sb.table("quiz_runs").select("*").eq("id", run_id).is_("deleted_at", "null").execute()
     )
     if not run_result.data:
         raise ValueError("Quiz run not found")
     run = run_result.data[0]
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     correct = 0
     total = 0
 
@@ -229,20 +223,24 @@ def complete_quiz_run(
             if is_correct:
                 correct += 1
             total += 1
-            log_rows.append({
-                "quiz_run_id": run_id,
-                "quizlet_question_id": a.get("question_id"),
-                "word_id": a.get("word_id") or None,
-                "result": "correct" if is_correct else "incorrect",
-                "question_type": a.get("question_type", "flashcard"),
-            })
+            log_rows.append(
+                {
+                    "quiz_run_id": run_id,
+                    "quizlet_question_id": a.get("question_id"),
+                    "word_id": a.get("word_id") or None,
+                    "result": "correct" if is_correct else "incorrect",
+                    "question_type": a.get("question_type", "flashcard"),
+                }
+            )
         sb.table("review_log").insert(log_rows).execute()
 
-    sb.table("quiz_runs").update({
-        "completed_at": now,
-        "score_correct": correct,
-        "score_total": total,
-    }).eq("id", run_id).execute()
+    sb.table("quiz_runs").update(
+        {
+            "completed_at": now,
+            "score_correct": correct,
+            "score_total": total,
+        }
+    ).eq("id", run_id).execute()
 
     run["completed_at"] = now
     run["score_correct"] = correct
@@ -316,11 +314,7 @@ def get_tag_practice_stats() -> list[dict[str, Any]]:
     sb = get_supabase()
 
     reviews = (
-        sb.table("review_log")
-        .select("word_id, result")
-        .is_("deleted_at", "null")
-        .execute()
-        .data
+        sb.table("review_log").select("word_id, result").is_("deleted_at", "null").execute().data
     )
     if not reviews:
         return []
@@ -364,9 +358,7 @@ def get_tag_practice_stats() -> list[dict[str, Any]]:
     result = list(tag_stats.values())
     for s in result:
         s["accuracy"] = (
-            round(s["correct"] / s["total_attempts"], 2)
-            if s["total_attempts"]
-            else None
+            round(s["correct"] / s["total_attempts"], 2) if s["total_attempts"] else None
         )
     result.sort(key=lambda s: s["total_attempts"], reverse=True)
     return result
@@ -375,7 +367,7 @@ def get_tag_practice_stats() -> list[dict[str, Any]]:
 def delete_quizlet(quizlet_id: str) -> bool:
     """Soft-delete a quizlet."""
     sb = get_supabase()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     result = (
         sb.table("quizlets")
         .update({"deleted_at": now})

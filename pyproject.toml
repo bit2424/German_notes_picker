@@ -6,7 +6,7 @@ authors = [
     {name = "Nelson Quinones"}
 ]
 readme = "README.md"
-requires-python = "^3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "langdetect (>=1.0.9,<2.0.0)",
     "anthropic (>=0.88.0,<0.89.0)",
@@ -24,6 +24,67 @@ dependencies = [
 [tool.poetry]
 packages = [{include = "german_notes"}]
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "data", "output", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# B008: FastAPI uses `Body()`, `File()`, `Form()`, `Depends()` in defaults by design.
+extend-ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+# Initial baseline: catch real type errors without forcing every legacy
+# function to be annotated. Ratchet up per-module over time by enabling
+# `disallow_untyped_defs` and `check_untyped_defs` as files get cleaned up.
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+exclude = ["\\.venv", "data", "output", "tests"]
+
+[[tool.mypy.overrides]]
+module = [
+    "supabase.*",
+    "autogen_agentchat.*",
+    "autogen_ext.*",
+    "langdetect.*",
+    "tiktoken.*",
+]
+ignore_missing_imports = true
+
+# Legacy modules with heavy use of untyped Supabase JSON responses.
+# Re-enable type checking per-file as call sites are migrated to typed wrappers.
+[[tool.mypy.overrides]]
+module = [
+    "german_notes.api.routes",
+    "german_notes.api.tools",
+    "german_notes.agents.quiz_helpers",
+    "german_notes.agents.quiz_tools",
+    "german_notes.agents.enricher_tools",
+    "german_notes.agents.enricher",
+    "german_notes.agents.db_helpers",
+    "german_notes.agents.tools",
+    "german_notes.agents.orchestrator",
+    "german_notes.ocr.client",
+    "german_notes.extractor.classifier",
+]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

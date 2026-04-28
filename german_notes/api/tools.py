@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from german_notes.api.supabase_client import get_supabase
-from german_notes.core.models import GermanSentence, Message, VocabPair
+from german_notes.core.models import GermanSentence, VocabPair
 from german_notes.extractor.classifier import classify
 from german_notes.extractor.parser import parse_file
 from german_notes.ocr.client import extract_from_image as ocr_extract
