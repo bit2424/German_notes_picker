@@ -4,6 +4,52 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-04-28 -- MUI adoption: theme bridge + full component migration
+
+### What was done
+
+**MUI foundation**
+
+- Installed `@mui/material`, `@emotion/react`, `@emotion/styled` into `frontend/`. Skipped `@mui/icons-material` for now to keep the bundle lean — current components use text/symbol children inside `IconButton`.
+- Created `frontend/src/theme.ts` mirroring the palette in `index.css` so MUI components blend with the existing CSS-variable styling. Uses `cssVariables: true` and `colorSchemes` (light + dark) so MUI follows the OS `prefers-color-scheme` like the rest of the app. `shape.borderRadius: 12` matches `--radius-md`.
+- Wrapped `App` with `<ThemeProvider theme={theme} defaultMode="system">` in `main.tsx`. No `CssBaseline` yet — keeps `App.css` fully in charge of layout/globals to avoid breakage.
+
+**Migrated components (modal shell + interactive controls only — card body classes preserved)**
+
+- `IntakeReview.tsx` — modal shell (`modal-overlay`/`modal-container`/`modal-header`/`modal-body`/`modal-footer`) → `Dialog`/`DialogTitle`/`DialogContent dividers`/`DialogActions`. Footer `<button>`s → MUI `Button` (contained for primary, text for secondary). Native `<input type="checkbox">` per card → MUI `Checkbox`. Removed the `useEffect` that toggled `document.body.style.overflow` — `Dialog` handles scroll lock itself.
+- `EnrichmentReview.tsx` — same pattern as `IntakeReview`.
+- `ChatInput.tsx` — `<textarea>` + manual auto-resize effect → `TextField multiline maxRows={6}` (auto-grow built-in). Attach `+`, send `→`, and per-file `×` buttons → `IconButton`. Quick/Enrich pill → `ToggleButton` with rounded `sx`. Removed the `textareaRef` + `useEffect` height calculation.
+- `TagPills.tsx` — tag pill spans → `Chip` with `onDelete`. "+ tag" button → outlined clickable `Chip`. Tag input → `TextField`; dropdown items → `Button` with start-aligned text.
+- `ChatList.tsx` — new-chat `+`, rename `✎`, delete `×` buttons → `IconButton` (delete uses `color="error"`). Inline rename input → `TextField size="small"`.
+- `ChatMessage.tsx` — `attachment-chip` span → `Chip` outlined size small.
+- `TranslationsSection.tsx` — `cell-input` text → `TextField`. ES/EN `<select>` → `TextField select` with `MenuItem`. Edit/Delete/Save/Cancel/Add `row-btn`s → `Button` (contained for primary, error color for delete).
+- `ExplanationsList.tsx` — explanation textareas → `TextField multiline minRows={2}`. Edit/Save/Cancel/Delete/Add `row-btn`s → `Button`.
+- `CorrectionsList.tsx` — three `cell-input`s (original/corrected/note) → `TextField`. Accept/Reject/Delete/Add/Cancel/+Correction → `Button` (success color for Accept, error for Reject/Delete).
+- `LibraryView.tsx` — three sub-tab buttons → MUI `Tabs` + `Tab` (text/indicator color = `primary`).
+- `TextDetail.tsx` (`LinkedWords`) — `cell-input` search → `TextField`. Dropdown items + Unlink + "+ Link word" row-btns → `Button`.
+- `WordDetail.tsx` — `WordTypeSelector` `<select>` → `TextField select` + `MenuItem`. `VerbSection`: text inputs → `TextField` (with floating `label`), case `<select>` → `TextField select`, reflexive checkbox → `FormControlLabel` + MUI `Checkbox`. `NounSection`: same pattern. `AdjSection.DeclensionCell`: `<input>` → `TextField`. Save/Cancel/Change row-btns → `Button`.
+- `TextsTable.tsx` — toolbar search, create row input, edit-row inputs (content + source) → `TextField`. Retry/+Add/Create/Cancel/Save/Clear search row-btns → `Button`. Header sort buttons + row kebab `<details>` menu kept as-is.
+- `WordsTable.tsx` — toolbar search, edit-row inputs (german + source + translation), create-row inputs, 3 filter `<select>`s → `TextField` (with `select` for the latter). Bulk-bar Enrich/Deselect, +Add, Retry, Save/Cancel, Clear filters → `Button`. Per-row + header `<input type="checkbox">` (Enrich column) → MUI `Checkbox`. Inline `modal-overlay` "No enrichments to propose" → `Dialog`/`DialogTitle`/`DialogContent`/`DialogActions`.
+- `TagsTable.tsx` — search filter + new tag input → `TextField`. Create + per-row Delete row-btns → `Button` (delete uses `color="error"`).
+- `QuizletView.tsx` — setup phase: prompt + pool-count + run-count `<input>` → `TextField` (number variant uses `slotProps.htmlInput.min/max`). Tag selector pill `<button>`s → `Chip` (`clickable`, `color="primary"` + `variant="filled"` when selected). All quiz-action-btn / quiz-generate-btn / quiz-back-btn / quiz-next-btn → `Button` (success/error coloring on Got-it/Missed-it). Loading spinner div → `CircularProgress`. Three wrapping `<label className="quiz-field-label">` → `<div>` (they were section labels, not form labels, and MUI hides the native input from the wrapper so a11y rule fired).
+
+### Verified working
+
+- `make check-frontend` — eslint clean (0 errors, pre-existing a11y warnings only), prettier clean, tsc clean, vite build succeeds.
+- Bundle JS gzip: 140.49 kB → 187.04 kB (+33%) from MUI core. Acceptable for a personal app; can revisit with code-splitting later.
+
+### Cleanup deferred
+
+- `App.css` rules for `modal-overlay`, `modal-container`, `modal-header/body/footer`, `row-btn` variants, `cell-input`, `attach-btn`, `enrich-toggle`, `chat-list-action`, `tag-pill`, `tag-input`, `tag-pill-add`, `quiz-action-btn`, `quiz-generate-btn`, `quiz-back-btn`, `quiz-next-btn`, `quiz-loading-spinner`, etc. are no longer rendered by any component but still in the stylesheet. Sweep them on a future pass once we're confident there's no regression.
+- `CssBaseline` still not added — `App.css` owns global resets/typography. Drop it in once enough remaining hand-rolled styles are deleted.
+- `@mui/icons-material` not installed — text/symbol children (`+`, `→`, `×`, `✎`, `···`, `▲`, `▼`, `▸`) used inline. Install when going for full Material visual.
+- **`@mui/icons-material`.** Install when we want real Material icons (Add, Send, Close, etc.) instead of `+`/`→`/`×` text. Will add ~bundle size but tree-shakes well.
+- **`CssBaseline`.** Once enough components are migrated, drop in `<CssBaseline />` and start trimming the corresponding rules from `App.css`.
+- **ORM** — unchanged from previous session (SQLAlchemy 2.0 + Alembic recommended, SQLModel as Pydantic-based alternative).
+- **Mypy / a11y ratchet** — unchanged.
+
+---
+
 ## 2026-04-28 -- Project guardrails: linters, formatters, type-checkers, pre-commit, CI
 
 ### What was done
