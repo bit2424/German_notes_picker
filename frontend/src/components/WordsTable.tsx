@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type WordItem,
   type WordPracticeStats,
@@ -10,14 +10,14 @@ import {
   updateTranslation,
   createWord,
   proposeEnrichments,
-} from "../api";
-import EnrichmentReview from "./EnrichmentReview";
-import WordDetail from "./WordDetail";
+} from '../api';
+import EnrichmentReview from './EnrichmentReview';
+import WordDetail from './WordDetail';
 
-type SortKey = "german" | "type" | "lang" | "source" | "date" | "practice";
-type SortDir = "asc" | "desc";
+type SortKey = 'german' | 'type' | 'lang' | 'source' | 'date' | 'practice';
+type SortDir = 'asc' | 'desc';
 
-const collator = new Intl.Collator("de", { sensitivity: "base" });
+const collator = new Intl.Collator('de', { sensitivity: 'base' });
 
 function comparator(
   a: WordItem,
@@ -26,53 +26,53 @@ function comparator(
   dir: SortDir,
   practiceMap?: Record<string, WordPracticeStats>,
 ): number {
-  if (key === "practice" && practiceMap) {
+  if (key === 'practice' && practiceMap) {
     const pa = practiceMap[a.id];
     const pb = practiceMap[b.id];
     const va = pa?.accuracy ?? -1;
     const vb = pb?.accuracy ?? -1;
     const cmp = va - vb;
-    return dir === "asc" ? cmp : -cmp;
+    return dir === 'asc' ? cmp : -cmp;
   }
   let va: string;
   let vb: string;
   switch (key) {
-    case "german":
+    case 'german':
       va = a.german;
       vb = b.german;
       break;
-    case "type":
-      va = a.word_type ?? "";
-      vb = b.word_type ?? "";
+    case 'type':
+      va = a.word_type ?? '';
+      vb = b.word_type ?? '';
       break;
-    case "lang":
-      va = a.translations[0]?.language ?? "";
-      vb = b.translations[0]?.language ?? "";
+    case 'lang':
+      va = a.translations[0]?.language ?? '';
+      vb = b.translations[0]?.language ?? '';
       break;
-    case "source":
-      va = a.source ?? "";
-      vb = b.source ?? "";
+    case 'source':
+      va = a.source ?? '';
+      vb = b.source ?? '';
       break;
-    case "date":
-      va = a.date ?? "";
-      vb = b.date ?? "";
+    case 'date':
+      va = a.date ?? '';
+      vb = b.date ?? '';
       break;
     default:
-      va = "";
-      vb = "";
+      va = '';
+      vb = '';
   }
   const cmp = collator.compare(va, vb);
-  return dir === "asc" ? cmp : -cmp;
+  return dir === 'asc' ? cmp : -cmp;
 }
 
 export default function WordsTable() {
   const [items, setItems] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [filter, setFilter] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterSource, setFilterSource] = useState("");
-  const [filterLang, setFilterLang] = useState("");
+  const [filter, setFilter] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterSource, setFilterSource] = useState('');
+  const [filterLang, setFilterLang] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{
@@ -82,12 +82,12 @@ export default function WordsTable() {
     source?: string | null;
   }>({});
   const [showCreate, setShowCreate] = useState(false);
-  const [createDraft, setCreateDraft] = useState({ german: "", word_type: "other" });
+  const [createDraft, setCreateDraft] = useState({ german: '', word_type: 'other' });
   const [enriching, setEnriching] = useState(false);
   const [proposals, setProposals] = useState<EnrichmentProposal[] | null>(null);
   const [enrichSelection, setEnrichSelection] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [practiceMap, setPracticeMap] = useState<Record<string, WordPracticeStats>>({});
 
   const activeTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -113,15 +113,18 @@ export default function WordsTable() {
 
   const typeOptions = useMemo(
     () => [...new Set(items.map((w) => w.word_type).filter(Boolean))].sort(),
-    [items]
+    [items],
   );
   const sourceOptions = useMemo(
     () => [...new Set(items.map((w) => w.source).filter(Boolean))].sort() as string[],
-    [items]
+    [items],
   );
   const langOptions = useMemo(
-    () => [...new Set(items.flatMap((w) => w.translations.map((t) => t.language)).filter(Boolean))].sort(),
-    [items]
+    () =>
+      [
+        ...new Set(items.flatMap((w) => w.translations.map((t) => t.language)).filter(Boolean)),
+      ].sort(),
+    [items],
   );
 
   const hasActiveFilters = filterType || filterSource || filterLang;
@@ -132,7 +135,7 @@ export default function WordsTable() {
         const q = filter.toLowerCase();
         const matchText =
           w.german.toLowerCase().includes(q) ||
-          (w.translations[0]?.translation ?? "").toLowerCase().includes(q);
+          (w.translations[0]?.translation ?? '').toLowerCase().includes(q);
         if (!matchText) return false;
       }
       if (filterType && w.word_type !== filterType) return false;
@@ -149,18 +152,18 @@ export default function WordsTable() {
   }, [items, filter, filterType, filterSource, filterLang, sortKey, sortDir, practiceMap]);
 
   function primaryTranslation(w: WordItem): string {
-    return w.translations[0]?.translation ?? "—";
+    return w.translations[0]?.translation ?? '—';
   }
 
   function primaryLang(w: WordItem): string {
-    return w.translations[0]?.language ?? "—";
+    return w.translations[0]?.language ?? '—';
   }
 
   function clearAllViewFilters() {
-    setFilter("");
-    setFilterType("");
-    setFilterSource("");
-    setFilterLang("");
+    setFilter('');
+    setFilterType('');
+    setFilterSource('');
+    setFilterLang('');
   }
 
   function startEdit(item: WordItem) {
@@ -168,7 +171,7 @@ export default function WordsTable() {
     setActiveId(null);
     setEditDraft({
       german: item.german,
-      translation: item.translations[0]?.translation ?? "",
+      translation: item.translations[0]?.translation ?? '',
       translationId: item.translations[0]?.id,
       source: item.source,
     });
@@ -201,7 +204,7 @@ export default function WordsTable() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this word?")) return;
+    if (!confirm('Delete this word?')) return;
     try {
       await deleteWord(id);
       setItems((prev) => prev.filter((w) => w.id !== id));
@@ -217,7 +220,7 @@ export default function WordsTable() {
       await createWord(createDraft.german.trim(), createDraft.word_type);
       const refreshed = await fetchWords();
       setItems(refreshed.words);
-      setCreateDraft({ german: "", word_type: "other" });
+      setCreateDraft({ german: '', word_type: 'other' });
       setShowCreate(false);
     } catch {
       /* swallow */
@@ -252,9 +255,7 @@ export default function WordsTable() {
   }
 
   async function handleEnrich() {
-    const ids = filtered
-      .map((w) => w.id)
-      .filter((id) => enrichSelection.has(id));
+    const ids = filtered.map((w) => w.id).filter((id) => enrichSelection.has(id));
     if (ids.length === 0) return;
 
     setEnriching(true);
@@ -281,8 +282,8 @@ export default function WordsTable() {
   }
 
   function handleEditKeyDown(e: React.KeyboardEvent, id: string) {
-    if (e.key === "Enter") saveEdit(id);
-    if (e.key === "Escape") cancelEdit();
+    if (e.key === 'Enter') saveEdit(id);
+    if (e.key === 'Escape') cancelEdit();
   }
 
   function openDetail(id: string, triggerEl?: HTMLButtonElement | null) {
@@ -298,47 +299,45 @@ export default function WordsTable() {
 
   function cycleSort(key: SortKey) {
     if (sortKey === key) {
-      if (sortDir === "asc") setSortDir("desc");
+      if (sortDir === 'asc') setSortDir('desc');
       else {
         setSortKey(null);
-        setSortDir("asc");
+        setSortDir('asc');
       }
     } else {
       setSortKey(key);
-      setSortDir("asc");
+      setSortDir('asc');
     }
   }
 
-  function sortAriaSort(key: SortKey): "ascending" | "descending" | "none" {
-    if (sortKey !== key) return "none";
-    return sortDir === "asc" ? "ascending" : "descending";
+  function sortAriaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
+    if (sortKey !== key) return 'none';
+    return sortDir === 'asc' ? 'ascending' : 'descending';
   }
 
   function sortIndicator(key: SortKey): string {
-    if (sortKey !== key) return "▸";
-    return sortDir === "asc" ? "▲" : "▼";
+    if (sortKey !== key) return '▸';
+    return sortDir === 'asc' ? '▲' : '▼';
   }
 
   const visibleSelectedCount = filtered.filter((w) => enrichSelection.has(w.id)).length;
   const allVisibleSelected =
     filtered.length > 0 && filtered.every((w) => enrichSelection.has(w.id));
   const hasViewFilters = Boolean(filter.trim()) || Boolean(hasActiveFilters);
-  const tableSummary = hasViewFilters
-    ? `${filtered.length} words shown`
-    : `${items.length} words`;
+  const tableSummary = hasViewFilters ? `${filtered.length} words shown` : `${items.length} words`;
   const tableSummarySecondary = hasViewFilters ? `${items.length} total` : null;
   const activeFilters = [
     filter.trim()
-      ? { key: "search", label: `Search: ${filter.trim()}`, onRemove: () => setFilter("") }
+      ? { key: 'search', label: `Search: ${filter.trim()}`, onRemove: () => setFilter('') }
       : null,
     filterType
-      ? { key: "type", label: `Type: ${filterType}`, onRemove: () => setFilterType("") }
+      ? { key: 'type', label: `Type: ${filterType}`, onRemove: () => setFilterType('') }
       : null,
     filterSource
-      ? { key: "source", label: `Source: ${filterSource}`, onRemove: () => setFilterSource("") }
+      ? { key: 'source', label: `Source: ${filterSource}`, onRemove: () => setFilterSource('') }
       : null,
     filterLang
-      ? { key: "language", label: `Language: ${filterLang}`, onRemove: () => setFilterLang("") }
+      ? { key: 'language', label: `Language: ${filterLang}`, onRemove: () => setFilterLang('') }
       : null,
   ].filter(Boolean) as Array<{ key: string; label: string; onRemove: () => void }>;
 
@@ -366,8 +365,12 @@ export default function WordsTable() {
       <div className="data-table-container">
         <div className="table-state-message">
           <p className="table-state-title">Failed to load words</p>
-          <p className="table-state-subtitle">Something went wrong while fetching your vocabulary.</p>
-          <button className="row-btn save-btn" onClick={doFetch}>Retry</button>
+          <p className="table-state-subtitle">
+            Something went wrong while fetching your vocabulary.
+          </p>
+          <button className="row-btn save-btn" onClick={doFetch}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -388,7 +391,7 @@ export default function WordsTable() {
   }
 
   return (
-    <div className={`data-table-container ${activeId ? "panel-open" : ""}`}>
+    <div className={`data-table-container ${activeId ? 'panel-open' : ''}`}>
       <div className="table-body-area">
         <div className="table-toolbar">
           <div className="table-toolbar-main">
@@ -413,7 +416,7 @@ export default function WordsTable() {
                 )}
               </div>
               <button className="row-btn save-btn" onClick={() => setShowCreate(!showCreate)}>
-                {showCreate ? "Close" : "+ Add"}
+                {showCreate ? 'Close' : '+ Add'}
               </button>
             </div>
           </div>
@@ -422,39 +425,49 @@ export default function WordsTable() {
         <div className="table-filter-row">
           <span className="table-filter-label">Filter:</span>
           <select
-            className={`table-filter-select ${filterType ? "active" : ""}`}
+            className={`table-filter-select ${filterType ? 'active' : ''}`}
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
           >
             <option value="">All types</option>
             {typeOptions.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
           <select
-            className={`table-filter-select ${filterSource ? "active" : ""}`}
+            className={`table-filter-select ${filterSource ? 'active' : ''}`}
             value={filterSource}
             onChange={(e) => setFilterSource(e.target.value)}
           >
             <option value="">All sources</option>
             {sourceOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
           <select
-            className={`table-filter-select ${filterLang ? "active" : ""}`}
+            className={`table-filter-select ${filterLang ? 'active' : ''}`}
             value={filterLang}
             onChange={(e) => setFilterLang(e.target.value)}
           >
             <option value="">All languages</option>
             {langOptions.map((l) => (
-              <option key={l} value={l}>{l}</option>
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
           </select>
           {hasActiveFilters && (
             <button
               className="table-filter-clear"
-              onClick={() => { setFilterType(""); setFilterSource(""); setFilterLang(""); }}
+              onClick={() => {
+                setFilterType('');
+                setFilterSource('');
+                setFilterLang('');
+              }}
             >
               Clear filters
             </button>
@@ -471,7 +484,9 @@ export default function WordsTable() {
                 title={`Remove ${af.label}`}
               >
                 <span>{af.label}</span>
-                <span className="table-filter-chip-close" aria-hidden="true">x</span>
+                <span className="table-filter-chip-close" aria-hidden="true">
+                  x
+                </span>
               </button>
             ))}
             <button className="table-filter-clear-all" onClick={clearAllViewFilters}>
@@ -487,12 +502,8 @@ export default function WordsTable() {
               <span className="table-bulk-label">for enrichment</span>
             </div>
             <div className="table-bulk-actions">
-              <button
-                className="row-btn enrich-btn"
-                onClick={handleEnrich}
-                disabled={enriching}
-              >
-                {enriching ? "Enriching..." : "Enrich selected"}
+              <button className="row-btn enrich-btn" onClick={handleEnrich} disabled={enriching}>
+                {enriching ? 'Enriching...' : 'Enrich selected'}
               </button>
               <button className="row-btn cancel-btn" onClick={clearVisibleSelection}>
                 Deselect all
@@ -508,18 +519,28 @@ export default function WordsTable() {
               placeholder="German word…"
               value={createDraft.german}
               onChange={(e) => setCreateDraft((d) => ({ ...d, german: e.target.value }))}
-              onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setShowCreate(false); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate();
+                if (e.key === 'Escape') setShowCreate(false);
+              }}
               autoFocus
             />
-            <select className="cell-input cell-input-sm-select" value={createDraft.word_type}
-              onChange={(e) => setCreateDraft((d) => ({ ...d, word_type: e.target.value }))}>
+            <select
+              className="cell-input cell-input-sm-select"
+              value={createDraft.word_type}
+              onChange={(e) => setCreateDraft((d) => ({ ...d, word_type: e.target.value }))}
+            >
               <option value="other">other</option>
               <option value="verb">verb</option>
               <option value="noun">noun</option>
               <option value="adjective">adjective</option>
             </select>
-            <button className="row-btn save-btn" onClick={handleCreate}>Create</button>
-            <button className="row-btn cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button>
+            <button className="row-btn save-btn" onClick={handleCreate}>
+              Create
+            </button>
+            <button className="row-btn cancel-btn" onClick={() => setShowCreate(false)}>
+              Cancel
+            </button>
           </div>
         )}
 
@@ -527,52 +548,40 @@ export default function WordsTable() {
           <table className="data-table" role="grid">
             <thead>
               <tr>
-                <th
-                  className="th-sortable cell-german-column"
-                  aria-sort={sortAriaSort("german")}
-                >
-                  <button
-                    type="button"
-                    className="th-sort-btn"
-                    onClick={() => cycleSort("german")}
-                  >
+                <th className="th-sortable cell-german-column" aria-sort={sortAriaSort('german')}>
+                  <button type="button" className="th-sort-btn" onClick={() => cycleSort('german')}>
                     German
-                    <span className={`sort-indicator ${sortKey === "german" ? "active" : ""}`}>
-                      {sortIndicator("german")}
+                    <span className={`sort-indicator ${sortKey === 'german' ? 'active' : ''}`}>
+                      {sortIndicator('german')}
                     </span>
                   </button>
                 </th>
                 <th className="cell-translation-column">Translation</th>
-                <th
-                  className="th-sortable cell-lang-col"
-                  aria-sort={sortAriaSort("lang")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("lang")}>
+                <th className="th-sortable cell-lang-col" aria-sort={sortAriaSort('lang')}>
+                  <button type="button" className="th-sort-btn" onClick={() => cycleSort('lang')}>
                     Lang
-                    <span className={`sort-indicator ${sortKey === "lang" ? "active" : ""}`}>
-                      {sortIndicator("lang")}
+                    <span className={`sort-indicator ${sortKey === 'lang' ? 'active' : ''}`}>
+                      {sortIndicator('lang')}
                     </span>
                   </button>
                 </th>
-                <th
-                  className="th-sortable cell-type-col"
-                  aria-sort={sortAriaSort("type")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("type")}>
+                <th className="th-sortable cell-type-col" aria-sort={sortAriaSort('type')}>
+                  <button type="button" className="th-sort-btn" onClick={() => cycleSort('type')}>
                     Type
-                    <span className={`sort-indicator ${sortKey === "type" ? "active" : ""}`}>
-                      {sortIndicator("type")}
+                    <span className={`sort-indicator ${sortKey === 'type' ? 'active' : ''}`}>
+                      {sortIndicator('type')}
                     </span>
                   </button>
                 </th>
-                <th
-                  className="th-sortable cell-practice-col"
-                  aria-sort={sortAriaSort("practice")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("practice")}>
+                <th className="th-sortable cell-practice-col" aria-sort={sortAriaSort('practice')}>
+                  <button
+                    type="button"
+                    className="th-sort-btn"
+                    onClick={() => cycleSort('practice')}
+                  >
                     Practice
-                    <span className={`sort-indicator ${sortKey === "practice" ? "active" : ""}`}>
-                      {sortIndicator("practice")}
+                    <span className={`sort-indicator ${sortKey === 'practice' ? 'active' : ''}`}>
+                      {sortIndicator('practice')}
                     </span>
                   </button>
                 </th>
@@ -607,26 +616,54 @@ export default function WordsTable() {
               {filtered.map((w) => (
                 <Fragment key={w.id}>
                   {editingId === w.id ? (
-                    <tr
-                      className="editing-row"
-                      data-editing="true"
-                    >
+                    <tr className="editing-row" data-editing="true">
                       <td className="cell-german-column">
                         <div className="cell-german-stack">
-                          <input className="cell-input" value={editDraft.german ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, german: e.target.value }))} onKeyDown={(e) => handleEditKeyDown(e, w.id)} autoFocus />
-                          <input className="cell-input cell-input-meta" value={editDraft.source ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))} onKeyDown={(e) => handleEditKeyDown(e, w.id)} placeholder="Source" />
+                          <input
+                            className="cell-input"
+                            value={editDraft.german ?? ''}
+                            onChange={(e) =>
+                              setEditDraft((d) => ({ ...d, german: e.target.value }))
+                            }
+                            onKeyDown={(e) => handleEditKeyDown(e, w.id)}
+                            autoFocus
+                          />
+                          <input
+                            className="cell-input cell-input-meta"
+                            value={editDraft.source ?? ''}
+                            onChange={(e) =>
+                              setEditDraft((d) => ({ ...d, source: e.target.value }))
+                            }
+                            onKeyDown={(e) => handleEditKeyDown(e, w.id)}
+                            placeholder="Source"
+                          />
                         </div>
                       </td>
                       <td className="cell-translation-column">
-                        <input className="cell-input" value={editDraft.translation ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, translation: e.target.value }))} onKeyDown={(e) => handleEditKeyDown(e, w.id)} />
+                        <input
+                          className="cell-input"
+                          value={editDraft.translation ?? ''}
+                          onChange={(e) =>
+                            setEditDraft((d) => ({ ...d, translation: e.target.value }))
+                          }
+                          onKeyDown={(e) => handleEditKeyDown(e, w.id)}
+                        />
                       </td>
                       <td className="cell-lang-col cell-lang">{primaryLang(w)}</td>
-                      <td className="cell-type-col"><span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span></td>
-                      <td className="cell-practice-col"><PracticeCell stats={practiceMap[w.id]} /></td>
+                      <td className="cell-type-col">
+                        <span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span>
+                      </td>
+                      <td className="cell-practice-col">
+                        <PracticeCell stats={practiceMap[w.id]} />
+                      </td>
                       <td className="actions-col">
                         <div className="row-actions row-actions-visible">
-                          <button className="row-btn save-btn" onClick={() => saveEdit(w.id)}>Save</button>
-                          <button className="row-btn cancel-btn" onClick={cancelEdit}>Cancel</button>
+                          <button className="row-btn save-btn" onClick={() => saveEdit(w.id)}>
+                            Save
+                          </button>
+                          <button className="row-btn cancel-btn" onClick={cancelEdit}>
+                            Cancel
+                          </button>
                         </div>
                       </td>
                       <td className="enrich-check-col">
@@ -647,7 +684,7 @@ export default function WordsTable() {
                           className="cell-german-button"
                           onClick={(e) => openDetail(w.id, e.currentTarget)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
+                            if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               openDetail(w.id, e.currentTarget);
                             }
@@ -656,8 +693,8 @@ export default function WordsTable() {
                           <span className="cell-german">{w.german}</span>
                           {(w.source || w.date) && (
                             <span className="cell-german-meta">
-                              {w.source ?? "manual"}
-                              {w.date ? ` · ${w.date}` : ""}
+                              {w.source ?? 'manual'}
+                              {w.date ? ` · ${w.date}` : ''}
                             </span>
                           )}
                         </button>
@@ -666,16 +703,35 @@ export default function WordsTable() {
                         <div className="cell-translation-wrap">{primaryTranslation(w)}</div>
                       </td>
                       <td className="cell-lang-col cell-lang">{primaryLang(w)}</td>
-                      <td className="cell-type-col"><span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span></td>
-                      <td className="cell-practice-col"><PracticeCell stats={practiceMap[w.id]} /></td>
+                      <td className="cell-type-col">
+                        <span className={`word-type-badge ${w.word_type}`}>{w.word_type}</span>
+                      </td>
+                      <td className="cell-practice-col">
+                        <PracticeCell stats={practiceMap[w.id]} />
+                      </td>
                       <td className="actions-col">
                         <details className="row-menu" onClick={(e) => e.stopPropagation()}>
-                          <summary className="row-menu-trigger" aria-label={`Actions for ${w.german}`}>
+                          <summary
+                            className="row-menu-trigger"
+                            aria-label={`Actions for ${w.german}`}
+                          >
                             ···
                           </summary>
                           <div className="row-menu-popover">
-                            <button type="button" className="row-menu-item" onClick={() => startEdit(w)}>Edit</button>
-                            <button type="button" className="row-menu-item row-menu-item-danger" onClick={() => handleDelete(w.id)}>Delete</button>
+                            <button
+                              type="button"
+                              className="row-menu-item"
+                              onClick={() => startEdit(w)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="row-menu-item row-menu-item-danger"
+                              onClick={() => handleDelete(w.id)}
+                            >
+                              Delete
+                            </button>
                           </div>
                         </details>
                       </td>
@@ -699,16 +755,20 @@ export default function WordsTable() {
         <aside
           className="detail-drawer"
           aria-label={`Details for ${activeWord.german}`}
-          onKeyDown={(e) => { if (e.key === "Escape") closePanel(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') closePanel();
+          }}
         >
           <div className="detail-drawer-header">
             <div className="detail-drawer-title-row">
               <h3 className="detail-drawer-title">{activeWord.german}</h3>
-              <span className={`word-type-badge ${activeWord.word_type}`}>{activeWord.word_type}</span>
+              <span className={`word-type-badge ${activeWord.word_type}`}>
+                {activeWord.word_type}
+              </span>
             </div>
             <div className="detail-meta-bar">
-              <span className="detail-meta-chip">Source: {activeWord.source ?? "—"}</span>
-              <span className="detail-meta-chip">Date: {activeWord.date ?? "—"}</span>
+              <span className="detail-meta-chip">Source: {activeWord.source ?? '—'}</span>
+              <span className="detail-meta-chip">Date: {activeWord.date ?? '—'}</span>
             </div>
             <button
               type="button"
@@ -732,7 +792,7 @@ export default function WordsTable() {
               <h3>No enrichments to propose</h3>
             </div>
             <div className="modal-body">
-              <p style={{ color: "var(--muted)", textAlign: "center", margin: "1rem 0" }}>
+              <p style={{ color: 'var(--muted)', textAlign: 'center', margin: '1rem 0' }}>
                 All words appear to have complete data, or the agent could not generate proposals.
               </p>
             </div>
@@ -756,7 +816,7 @@ function PracticeCell({ stats }: { stats?: WordPracticeStats }) {
   if (!stats || stats.total_attempts === 0) {
     return <span className="practice-cell practice-cell-empty">—</span>;
   }
-  const pct = stats.accuracy != null ? `${Math.round(stats.accuracy * 100)}%` : "—";
+  const pct = stats.accuracy != null ? `${Math.round(stats.accuracy * 100)}%` : '—';
   return (
     <span className="practice-cell">
       <span className="practice-cell-pct">{pct}</span>

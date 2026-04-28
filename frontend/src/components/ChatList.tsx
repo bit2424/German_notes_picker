@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Chat } from "../api";
+import { useState } from 'react';
+import type { Chat } from '../api';
 
 interface Props {
   chats: Chat[];
@@ -19,7 +19,7 @@ export default function ChatList({
   onDelete,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editName, setEditName] = useState('');
 
   function startRename(chat: Chat) {
     setEditingId(chat.id);
@@ -31,14 +31,14 @@ export default function ChatList({
       onRename(editingId, editName.trim());
     }
     setEditingId(null);
-    setEditName("");
+    setEditName('');
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") commitRename();
-    if (e.key === "Escape") {
+    if (e.key === 'Enter') commitRename();
+    if (e.key === 'Escape') {
       setEditingId(null);
-      setEditName("");
+      setEditName('');
     }
   }
 
@@ -54,7 +54,7 @@ export default function ChatList({
         {chats.map((chat) => (
           <div
             key={chat.id}
-            className={`chat-list-item ${chat.id === activeChatId ? "active" : ""}`}
+            className={`chat-list-item ${chat.id === activeChatId ? 'active' : ''}`}
             onClick={() => onSelect(chat.id)}
           >
             {editingId === chat.id ? (
@@ -73,14 +73,20 @@ export default function ChatList({
                 <span className="chat-list-actions">
                   <button
                     className="chat-list-action"
-                    onClick={(e) => { e.stopPropagation(); startRename(chat); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startRename(chat);
+                    }}
                     title="Rename"
                   >
                     ✎
                   </button>
                   <button
                     className="chat-list-action chat-list-delete"
-                    onClick={(e) => { e.stopPropagation(); onDelete(chat.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(chat.id);
+                    }}
                     title="Delete"
                   >
                     ×

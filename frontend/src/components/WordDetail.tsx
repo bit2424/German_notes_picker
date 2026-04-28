@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 import {
   type WordDetails,
   type WordPracticeStats,
@@ -13,14 +13,14 @@ import {
   createAdjDeclension,
   updateAdjDeclension,
   updateWord,
-} from "../api";
-import TagPills from "./TagPills";
-import ExplanationsList from "./ExplanationsList";
-import CorrectionsList from "./CorrectionsList";
-import TranslationsSection from "./TranslationsSection";
+} from '../api';
+import TagPills from './TagPills';
+import ExplanationsList from './ExplanationsList';
+import CorrectionsList from './CorrectionsList';
+import TranslationsSection from './TranslationsSection';
 
-const CASES = ["nominativ", "akkusativ", "dativ", "genitiv"] as const;
-const GENDERS = ["maskulin", "feminin", "neutrum", "plural"] as const;
+const CASES = ['nominativ', 'akkusativ', 'dativ', 'genitiv'] as const;
+const GENDERS = ['maskulin', 'feminin', 'neutrum', 'plural'] as const;
 
 interface Props {
   wordId: string;
@@ -65,7 +65,9 @@ export default function WordDetail({ wordId }: Props) {
             </div>
             <div className="practice-stat">
               <span className="practice-stat-value">
-                {practiceStats.accuracy != null ? `${Math.round(practiceStats.accuracy * 100)}%` : "—"}
+                {practiceStats.accuracy != null
+                  ? `${Math.round(practiceStats.accuracy * 100)}%`
+                  : '—'}
               </span>
               <span className="practice-stat-label">Accuracy</span>
             </div>
@@ -85,14 +87,18 @@ export default function WordDetail({ wordId }: Props) {
         onAdd={(lang, text) => addTranslation(wordId, lang, text)}
         onChange={load}
       />
-      {data.word_type === "verb" && (
+      {data.word_type === 'verb' && (
         <VerbSection wordId={wordId} details={data.verb_details ?? null} onChange={load} />
       )}
-      {data.word_type === "noun" && (
+      {data.word_type === 'noun' && (
         <NounSection wordId={wordId} details={data.noun_details ?? null} onChange={load} />
       )}
-      {data.word_type === "adjective" && (
-        <AdjSection wordId={wordId} declensions={data.adjective_declensions ?? []} onChange={load} />
+      {data.word_type === 'adjective' && (
+        <AdjSection
+          wordId={wordId}
+          declensions={data.adjective_declensions ?? []}
+          onChange={load}
+        />
       )}
       <div className="detail-section">
         <h4 className="detail-section-title">Explanations</h4>
@@ -130,8 +136,12 @@ function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () 
   if (!editing) {
     return (
       <div className="detail-section detail-section-inline">
-        <span className="detail-type-label">Type: <strong>{word.word_type}</strong></span>
-        <button className="row-btn edit-btn" onClick={() => setEditing(true)}>Change</button>
+        <span className="detail-type-label">
+          Type: <strong>{word.word_type}</strong>
+        </span>
+        <button className="row-btn edit-btn" onClick={() => setEditing(true)}>
+          Change
+        </button>
       </div>
     );
   }
@@ -139,44 +149,62 @@ function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () 
   return (
     <div className="detail-section detail-section-inline">
       <span className="detail-type-label">Type:</span>
-      <select className="cell-input cell-input-sm-select" value={type} onChange={(e) => setType(e.target.value as WordDetails["word_type"])}>
+      <select
+        className="cell-input cell-input-sm-select"
+        value={type}
+        onChange={(e) => setType(e.target.value as WordDetails['word_type'])}
+      >
         <option value="verb">verb</option>
         <option value="noun">noun</option>
         <option value="adjective">adjective</option>
         <option value="other">other</option>
       </select>
-      <button className="row-btn save-btn" onClick={save}>Save</button>
-      <button className="row-btn cancel-btn" onClick={() => { setType(word.word_type); setEditing(false); }}>Cancel</button>
+      <button className="row-btn save-btn" onClick={save}>
+        Save
+      </button>
+      <button
+        className="row-btn cancel-btn"
+        onClick={() => {
+          setType(word.word_type);
+          setEditing(false);
+        }}
+      >
+        Cancel
+      </button>
     </div>
   );
 }
 
 const PRONOUNS = [
-  { key: "present_ich", label: "ich" },
-  { key: "present_du", label: "du" },
-  { key: "present_er", label: "er/sie/es" },
-  { key: "present_wir", label: "wir" },
-  { key: "present_ihr", label: "ihr" },
-  { key: "present_sie", label: "sie/Sie" },
+  { key: 'present_ich', label: 'ich' },
+  { key: 'present_du', label: 'du' },
+  { key: 'present_er', label: 'er/sie/es' },
+  { key: 'present_wir', label: 'wir' },
+  { key: 'present_ihr', label: 'ihr' },
+  { key: 'present_sie', label: 'sie/Sie' },
 ] as const;
 
-type ConjugationKey = typeof PRONOUNS[number]["key"];
+type ConjugationKey = (typeof PRONOUNS)[number]['key'];
 
-function VerbSection({ wordId, details, onChange }: {
+function VerbSection({
+  wordId,
+  details,
+  onChange,
+}: {
   wordId: string;
   details: VerbDetails | null;
   onChange: () => void;
 }) {
   const [draft, setDraft] = useState({
-    infinitive: details?.infinitive ?? "",
-    participle: details?.participle ?? "",
-    present_ich: details?.present_ich ?? "",
-    present_du: details?.present_du ?? "",
-    present_er: details?.present_er ?? "",
-    present_wir: details?.present_wir ?? "",
-    present_ihr: details?.present_ihr ?? "",
-    present_sie: details?.present_sie ?? "",
-    case_rule: details?.case_rule ?? "",
+    infinitive: details?.infinitive ?? '',
+    participle: details?.participle ?? '',
+    present_ich: details?.present_ich ?? '',
+    present_du: details?.present_du ?? '',
+    present_er: details?.present_er ?? '',
+    present_wir: details?.present_wir ?? '',
+    present_ihr: details?.present_ihr ?? '',
+    present_sie: details?.present_sie ?? '',
+    case_rule: details?.case_rule ?? '',
     is_reflexive: details?.is_reflexive ?? false,
   });
 
@@ -187,7 +215,7 @@ function VerbSection({ wordId, details, onChange }: {
   async function save() {
     await upsertVerbDetails(wordId, {
       ...draft,
-      case_rule: (draft.case_rule || null) as VerbDetails["case_rule"],
+      case_rule: (draft.case_rule || null) as VerbDetails['case_rule'],
     });
     onChange();
   }
@@ -196,14 +224,29 @@ function VerbSection({ wordId, details, onChange }: {
     <div className="detail-section">
       <h4 className="detail-section-title">Verb Details</h4>
       <div className="type-fields">
-        <label>Infinitive
-          <input className="cell-input" value={draft.infinitive} onChange={(e) => setField("infinitive", e.target.value)} />
+        <label>
+          Infinitive
+          <input
+            className="cell-input"
+            value={draft.infinitive}
+            onChange={(e) => setField('infinitive', e.target.value)}
+          />
         </label>
-        <label>Participle
-          <input className="cell-input" value={draft.participle} onChange={(e) => setField("participle", e.target.value)} />
+        <label>
+          Participle
+          <input
+            className="cell-input"
+            value={draft.participle}
+            onChange={(e) => setField('participle', e.target.value)}
+          />
         </label>
-        <label>Case
-          <select className="cell-input cell-input-sm-select" value={draft.case_rule} onChange={(e) => setField("case_rule", e.target.value)}>
+        <label>
+          Case
+          <select
+            className="cell-input cell-input-sm-select"
+            value={draft.case_rule}
+            onChange={(e) => setField('case_rule', e.target.value)}
+          >
             <option value="">—</option>
             <option value="akkusativ">Akkusativ</option>
             <option value="dativ">Dativ</option>
@@ -215,7 +258,7 @@ function VerbSection({ wordId, details, onChange }: {
         <input
           type="checkbox"
           checked={draft.is_reflexive}
-          onChange={(e) => setField("is_reflexive", e.target.checked)}
+          onChange={(e) => setField('is_reflexive', e.target.checked)}
         />
         <span>Reflexiv (sich)</span>
       </label>
@@ -235,19 +278,25 @@ function VerbSection({ wordId, details, onChange }: {
           ))}
         </div>
       </div>
-      <button className="row-btn save-btn" onClick={save}>Save verb details</button>
+      <button className="row-btn save-btn" onClick={save}>
+        Save verb details
+      </button>
     </div>
   );
 }
 
-function NounSection({ wordId, details, onChange }: {
+function NounSection({
+  wordId,
+  details,
+  onChange,
+}: {
   wordId: string;
   details: NounDetails | null;
   onChange: () => void;
 }) {
   const [draft, setDraft] = useState({
-    article: details?.article ?? "der",
-    plural: details?.plural ?? "",
+    article: details?.article ?? 'der',
+    plural: details?.plural ?? '',
   });
 
   async function save() {
@@ -259,23 +308,41 @@ function NounSection({ wordId, details, onChange }: {
     <div className="detail-section">
       <h4 className="detail-section-title">Noun Details</h4>
       <div className="type-fields">
-        <label>Article
-          <select className="cell-input cell-input-sm-select" value={draft.article} onChange={(e) => setDraft((d) => ({ ...d, article: e.target.value as "der" | "die" | "das" }))}>
+        <label>
+          Article
+          <select
+            className="cell-input cell-input-sm-select"
+            value={draft.article}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, article: e.target.value as 'der' | 'die' | 'das' }))
+            }
+          >
             <option value="der">der</option>
             <option value="die">die</option>
             <option value="das">das</option>
           </select>
         </label>
-        <label>Plural
-          <input className="cell-input" value={draft.plural} onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))} />
+        <label>
+          Plural
+          <input
+            className="cell-input"
+            value={draft.plural}
+            onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))}
+          />
         </label>
       </div>
-      <button className="row-btn save-btn" onClick={save}>Save noun details</button>
+      <button className="row-btn save-btn" onClick={save}>
+        Save noun details
+      </button>
     </div>
   );
 }
 
-function AdjSection({ wordId, declensions, onChange }: {
+function AdjSection({
+  wordId,
+  declensions,
+  onChange,
+}: {
   wordId: string;
   declensions: AdjDeclension[];
   onChange: () => void;
@@ -305,7 +372,9 @@ function AdjSection({ wordId, declensions, onChange }: {
         <thead>
           <tr>
             <th></th>
-            {GENDERS.map((g) => <th key={g}>{g}</th>)}
+            {GENDERS.map((g) => (
+              <th key={g}>{g}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -314,7 +383,10 @@ function AdjSection({ wordId, declensions, onChange }: {
               <td className="declension-case">{c}</td>
               {GENDERS.map((g) => (
                 <td key={g}>
-                  <DeclensionCell value={grid[c][g]?.form ?? ""} onSave={(v) => handleCellChange(c, g, v)} />
+                  <DeclensionCell
+                    value={grid[c][g]?.form ?? ''}
+                    onSave={(v) => handleCellChange(c, g, v)}
+                  />
                 </td>
               ))}
             </tr>
@@ -329,7 +401,9 @@ function DeclensionCell({ value, onSave }: { value: string; onSave: (v: string) 
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
 
-  useEffect(() => { setText(value); }, [value]);
+  useEffect(() => {
+    setText(value);
+  }, [value]);
 
   if (!editing) {
     return (
@@ -344,8 +418,20 @@ function DeclensionCell({ value, onSave }: { value: string; onSave: (v: string) 
       className="cell-input declension-input"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      onBlur={() => { if (text !== value) onSave(text); setEditing(false); }}
-      onKeyDown={(e) => { if (e.key === "Enter") { if (text !== value) onSave(text); setEditing(false); } if (e.key === "Escape") { setText(value); setEditing(false); } }}
+      onBlur={() => {
+        if (text !== value) onSave(text);
+        setEditing(false);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          if (text !== value) onSave(text);
+          setEditing(false);
+        }
+        if (e.key === 'Escape') {
+          setText(value);
+          setEditing(false);
+        }
+      }}
       autoFocus
     />
   );

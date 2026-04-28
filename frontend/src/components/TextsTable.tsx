@@ -1,51 +1,45 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  type TextItem,
-  deleteText,
-  fetchTexts,
-  updateText,
-  createText,
-} from "../api";
-import TextDetail from "./TextDetail";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type TextItem, deleteText, fetchTexts, updateText, createText } from '../api';
+import TextDetail from './TextDetail';
 
-type SortKey = "content" | "source" | "date";
-type SortDir = "asc" | "desc";
+type SortKey = 'content' | 'source' | 'date';
+type SortDir = 'asc' | 'desc';
 
-const collator = new Intl.Collator("de", { sensitivity: "base" });
+const collator = new Intl.Collator('de', { sensitivity: 'base' });
 
 function comparator(a: TextItem, b: TextItem, key: SortKey, dir: SortDir): number {
   let va: string;
   let vb: string;
   switch (key) {
-    case "content":
+    case 'content':
       va = a.content;
       vb = b.content;
       break;
-    case "source":
-      va = a.source ?? "";
-      vb = b.source ?? "";
+    case 'source':
+      va = a.source ?? '';
+      vb = b.source ?? '';
       break;
-    case "date":
-      va = a.date ?? "";
-      vb = b.date ?? "";
+    case 'date':
+      va = a.date ?? '';
+      vb = b.date ?? '';
       break;
   }
   const cmp = collator.compare(va, vb);
-  return dir === "asc" ? cmp : -cmp;
+  return dir === 'asc' ? cmp : -cmp;
 }
 
 export default function TextsTable() {
   const [items, setItems] = useState<TextItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<TextItem>>({});
   const [showCreate, setShowCreate] = useState(false);
-  const [createContent, setCreateContent] = useState("");
+  const [createContent, setCreateContent] = useState('');
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const activeTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -66,9 +60,10 @@ export default function TextsTable() {
     let result = items;
     if (filter) {
       const q = filter.toLowerCase();
-      result = result.filter((t) =>
-        t.content.toLowerCase().includes(q) ||
-        (t.translations ?? []).some((tr) => tr.translation.toLowerCase().includes(q))
+      result = result.filter(
+        (t) =>
+          t.content.toLowerCase().includes(q) ||
+          (t.translations ?? []).some((tr) => tr.translation.toLowerCase().includes(q)),
       );
     }
     if (sortKey) {
@@ -80,7 +75,7 @@ export default function TextsTable() {
   }, [items, filter, sortKey, sortDir]);
 
   function primaryTranslation(t: TextItem): string {
-    return t.translations?.[0]?.translation ?? "—";
+    return t.translations?.[0]?.translation ?? '—';
   }
 
   function startEdit(item: TextItem) {
@@ -108,7 +103,7 @@ export default function TextsTable() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this text?")) return;
+    if (!confirm('Delete this text?')) return;
     try {
       await deleteText(id);
       setItems((prev) => prev.filter((t) => t.id !== id));
@@ -123,7 +118,7 @@ export default function TextsTable() {
     try {
       const created = await createText(createContent.trim());
       setItems((prev) => [created, ...prev]);
-      setCreateContent("");
+      setCreateContent('');
       setShowCreate(false);
     } catch {
       /* swallow */
@@ -131,8 +126,8 @@ export default function TextsTable() {
   }
 
   function handleEditKeyDown(e: React.KeyboardEvent, id: string) {
-    if (e.key === "Enter") saveEdit(id);
-    if (e.key === "Escape") cancelEdit();
+    if (e.key === 'Enter') saveEdit(id);
+    if (e.key === 'Escape') cancelEdit();
   }
 
   function openDetail(id: string, triggerEl?: HTMLButtonElement | null) {
@@ -148,31 +143,29 @@ export default function TextsTable() {
 
   function cycleSort(key: SortKey) {
     if (sortKey === key) {
-      if (sortDir === "asc") setSortDir("desc");
+      if (sortDir === 'asc') setSortDir('desc');
       else {
         setSortKey(null);
-        setSortDir("asc");
+        setSortDir('asc');
       }
     } else {
       setSortKey(key);
-      setSortDir("asc");
+      setSortDir('asc');
     }
   }
 
-  function sortAriaSort(key: SortKey): "ascending" | "descending" | "none" {
-    if (sortKey !== key) return "none";
-    return sortDir === "asc" ? "ascending" : "descending";
+  function sortAriaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
+    if (sortKey !== key) return 'none';
+    return sortDir === 'asc' ? 'ascending' : 'descending';
   }
 
   function sortIndicator(key: SortKey): string {
-    if (sortKey !== key) return "▸";
-    return sortDir === "asc" ? "▲" : "▼";
+    if (sortKey !== key) return '▸';
+    return sortDir === 'asc' ? '▲' : '▼';
   }
 
   const hasViewFilters = Boolean(filter.trim());
-  const tableSummary = hasViewFilters
-    ? `${filtered.length} texts shown`
-    : `${items.length} texts`;
+  const tableSummary = hasViewFilters ? `${filtered.length} texts shown` : `${items.length} texts`;
   const tableSummarySecondary = hasViewFilters ? `${items.length} total` : null;
 
   const activeText = activeId ? items.find((t) => t.id === activeId) : null;
@@ -199,7 +192,9 @@ export default function TextsTable() {
         <div className="table-state-message">
           <p className="table-state-title">Failed to load texts</p>
           <p className="table-state-subtitle">Something went wrong while fetching your texts.</p>
-          <button className="row-btn save-btn" onClick={doFetch}>Retry</button>
+          <button className="row-btn save-btn" onClick={doFetch}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -220,7 +215,7 @@ export default function TextsTable() {
   }
 
   return (
-    <div className={`data-table-container ${activeId ? "panel-open" : ""}`}>
+    <div className={`data-table-container ${activeId ? 'panel-open' : ''}`}>
       <div className="table-body-area">
         <div className="table-toolbar">
           <div className="table-toolbar-main">
@@ -245,7 +240,7 @@ export default function TextsTable() {
                 )}
               </div>
               <button className="row-btn save-btn" onClick={() => setShowCreate(!showCreate)}>
-                {showCreate ? "Close" : "+ Add"}
+                {showCreate ? 'Close' : '+ Add'}
               </button>
             </div>
           </div>
@@ -255,13 +250,15 @@ export default function TextsTable() {
           <div className="table-active-filters" aria-label="Active filters">
             <button
               className="table-filter-chip"
-              onClick={() => setFilter("")}
+              onClick={() => setFilter('')}
               title={`Remove search: ${filter.trim()}`}
             >
               <span>Search: {filter.trim()}</span>
-              <span className="table-filter-chip-close" aria-hidden="true">x</span>
+              <span className="table-filter-chip-close" aria-hidden="true">
+                x
+              </span>
             </button>
-            <button className="table-filter-clear-all" onClick={() => setFilter("")}>
+            <button className="table-filter-clear-all" onClick={() => setFilter('')}>
               Reset view
             </button>
           </div>
@@ -274,11 +271,18 @@ export default function TextsTable() {
               placeholder="German text…"
               value={createContent}
               onChange={(e) => setCreateContent(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setShowCreate(false); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate();
+                if (e.key === 'Escape') setShowCreate(false);
+              }}
               autoFocus
             />
-            <button className="row-btn save-btn" onClick={handleCreate}>Create</button>
-            <button className="row-btn cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button>
+            <button className="row-btn save-btn" onClick={handleCreate}>
+              Create
+            </button>
+            <button className="row-btn cancel-btn" onClick={() => setShowCreate(false)}>
+              Cancel
+            </button>
           </div>
         )}
 
@@ -286,37 +290,32 @@ export default function TextsTable() {
           <table className="data-table" role="grid">
             <thead>
               <tr>
-                <th
-                  className="th-sortable cell-text-column"
-                  aria-sort={sortAriaSort("content")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("content")}>
+                <th className="th-sortable cell-text-column" aria-sort={sortAriaSort('content')}>
+                  <button
+                    type="button"
+                    className="th-sort-btn"
+                    onClick={() => cycleSort('content')}
+                  >
                     Text
-                    <span className={`sort-indicator ${sortKey === "content" ? "active" : ""}`}>
-                      {sortIndicator("content")}
+                    <span className={`sort-indicator ${sortKey === 'content' ? 'active' : ''}`}>
+                      {sortIndicator('content')}
                     </span>
                   </button>
                 </th>
                 <th className="cell-translation-column">Translation</th>
-                <th
-                  className="th-sortable"
-                  aria-sort={sortAriaSort("source")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("source")}>
+                <th className="th-sortable" aria-sort={sortAriaSort('source')}>
+                  <button type="button" className="th-sort-btn" onClick={() => cycleSort('source')}>
                     Source
-                    <span className={`sort-indicator ${sortKey === "source" ? "active" : ""}`}>
-                      {sortIndicator("source")}
+                    <span className={`sort-indicator ${sortKey === 'source' ? 'active' : ''}`}>
+                      {sortIndicator('source')}
                     </span>
                   </button>
                 </th>
-                <th
-                  className="th-sortable"
-                  aria-sort={sortAriaSort("date")}
-                >
-                  <button type="button" className="th-sort-btn" onClick={() => cycleSort("date")}>
+                <th className="th-sortable" aria-sort={sortAriaSort('date')}>
+                  <button type="button" className="th-sort-btn" onClick={() => cycleSort('date')}>
                     Date
-                    <span className={`sort-indicator ${sortKey === "date" ? "active" : ""}`}>
-                      {sortIndicator("date")}
+                    <span className={`sort-indicator ${sortKey === 'date' ? 'active' : ''}`}>
+                      {sortIndicator('date')}
                     </span>
                   </button>
                 </th>
@@ -330,7 +329,7 @@ export default function TextsTable() {
                     <div className="table-state-message table-state-inline">
                       <p className="table-state-title">No texts match this view</p>
                       <p className="table-state-subtitle">Try adjusting your search.</p>
-                      <button className="row-btn save-btn" onClick={() => setFilter("")}>
+                      <button className="row-btn save-btn" onClick={() => setFilter('')}>
                         Clear search
                       </button>
                     </div>
@@ -342,32 +341,46 @@ export default function TextsTable() {
                   {editingId === t.id ? (
                     <tr className="editing-row" data-editing="true">
                       <td className="cell-text-column">
-                        <input className="cell-input" value={editDraft.content ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, content: e.target.value }))} onKeyDown={(e) => handleEditKeyDown(e, t.id)} autoFocus />
+                        <input
+                          className="cell-input"
+                          value={editDraft.content ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, content: e.target.value }))}
+                          onKeyDown={(e) => handleEditKeyDown(e, t.id)}
+                          autoFocus
+                        />
                       </td>
                       <td className="cell-translation-column">
                         <div className="cell-translation-wrap">{primaryTranslation(t)}</div>
                       </td>
                       <td className="cell-source">
-                        <input className="cell-input cell-input-meta" value={editDraft.source ?? ""} onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))} onKeyDown={(e) => handleEditKeyDown(e, t.id)} placeholder="Source" />
+                        <input
+                          className="cell-input cell-input-meta"
+                          value={editDraft.source ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))}
+                          onKeyDown={(e) => handleEditKeyDown(e, t.id)}
+                          placeholder="Source"
+                        />
                       </td>
-                      <td className="cell-date">{t.date ?? "—"}</td>
+                      <td className="cell-date">{t.date ?? '—'}</td>
                       <td className="actions-col">
                         <div className="row-actions row-actions-visible">
-                          <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>Save</button>
-                          <button className="row-btn cancel-btn" onClick={cancelEdit}>Cancel</button>
+                          <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>
+                            Save
+                          </button>
+                          <button className="row-btn cancel-btn" onClick={cancelEdit}>
+                            Cancel
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    <tr
-                      data-active={activeId === t.id || undefined}
-                    >
+                    <tr data-active={activeId === t.id || undefined}>
                       <td className="cell-text-column">
                         <button
                           className="cell-german-button"
                           onClick={(e) => openDetail(t.id, e.currentTarget)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
+                            if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               openDetail(t.id, e.currentTarget);
                             }
@@ -379,16 +392,28 @@ export default function TextsTable() {
                       <td className="cell-translation-column">
                         <div className="cell-translation-wrap">{primaryTranslation(t)}</div>
                       </td>
-                      <td className="cell-source">{t.source ?? "—"}</td>
-                      <td className="cell-date">{t.date ?? "—"}</td>
+                      <td className="cell-source">{t.source ?? '—'}</td>
+                      <td className="cell-date">{t.date ?? '—'}</td>
                       <td className="actions-col">
                         <details className="row-menu" onClick={(e) => e.stopPropagation()}>
                           <summary className="row-menu-trigger" aria-label={`Actions for text`}>
                             ···
                           </summary>
                           <div className="row-menu-popover">
-                            <button type="button" className="row-menu-item" onClick={() => startEdit(t)}>Edit</button>
-                            <button type="button" className="row-menu-item row-menu-item-danger" onClick={() => handleDelete(t.id)}>Delete</button>
+                            <button
+                              type="button"
+                              className="row-menu-item"
+                              onClick={() => startEdit(t)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="row-menu-item row-menu-item-danger"
+                              onClick={() => handleDelete(t.id)}
+                            >
+                              Delete
+                            </button>
                           </div>
                         </details>
                       </td>
@@ -405,15 +430,17 @@ export default function TextsTable() {
         <aside
           className="detail-drawer"
           aria-label={`Details for text`}
-          onKeyDown={(e) => { if (e.key === "Escape") closePanel(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') closePanel();
+          }}
         >
           <div className="detail-drawer-header">
             <div className="detail-drawer-title-row">
               <h3 className="detail-drawer-title">{activeText.content}</h3>
             </div>
             <div className="detail-meta-bar">
-              <span className="detail-meta-chip">Source: {activeText.source ?? "—"}</span>
-              <span className="detail-meta-chip">Date: {activeText.date ?? "—"}</span>
+              <span className="detail-meta-chip">Source: {activeText.source ?? '—'}</span>
+              <span className="detail-meta-chip">Date: {activeText.date ?? '—'}</span>
             </div>
             <button
               type="button"

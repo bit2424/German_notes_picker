@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
-import {
-  type ApplyResult,
-  type EnrichmentProposal,
-  applyEnrichments,
-} from "../api";
+import { useState } from 'react';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import { type ApplyResult, type EnrichmentProposal, applyEnrichments } from '../api';
 
 interface Props {
   proposals: EnrichmentProposal[];
@@ -12,15 +14,15 @@ interface Props {
 
 export default function EnrichmentReview({ proposals, onDone }: Props) {
   const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(proposals.map((p) => p.word_id))
+    () => new Set(proposals.map((p) => p.word_id)),
   );
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState<ApplyResult | null>(null);
 
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     };
   }, []);
 
@@ -71,10 +73,10 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
                 </p>
                 <ul className="enrichment-result-list">
                   {result.details.map((d) => (
-                    <li key={d.word_id} className={d.ok ? "ok" : "fail"}>
+                    <li key={d.word_id} className={d.ok ? 'ok' : 'fail'}>
                       <strong>{d.german}</strong>
-                      {d.ok ? ": " : " (failed): "}
-                      {d.actions.join(", ") || "no changes"}
+                      {d.ok ? ': ' : ' (failed): '}
+                      {d.actions.join(', ') || 'no changes'}
                     </li>
                   ))}
                 </ul>
@@ -92,7 +94,7 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
               <h3>Proposed Enrichments ({proposals.length} words)</h3>
               <div className="enrichment-header-actions">
                 <button className="row-btn edit-btn" onClick={toggleAll}>
-                  {selected.size === proposals.length ? "Deselect All" : "Select All"}
+                  {selected.size === proposals.length ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
             </div>
@@ -114,7 +116,7 @@ export default function EnrichmentReview({ proposals, onDone }: Props) {
                 onClick={handleApply}
                 disabled={applying || selected.size === 0}
               >
-                {applying ? "Applying..." : `Apply ${selected.size} Selected`}
+                {applying ? 'Applying...' : `Apply ${selected.size} Selected`}
               </button>
               <button
                 className="row-btn cancel-btn"
@@ -152,7 +154,7 @@ function ProposalCard({
   if (!hasChanges) return null;
 
   return (
-    <div className={`enrichment-card ${checked ? "selected" : ""}`}>
+    <div className={`enrichment-card ${checked ? 'selected' : ''}`}>
       <label className="enrichment-card-header">
         <input type="checkbox" checked={checked} onChange={onToggle} />
         <span className="enrichment-word">{p.german}</span>
@@ -162,9 +164,7 @@ function ProposalCard({
         {p.word_type && (
           <div className="enrichment-field">
             <span className="enrichment-label">Type</span>
-            <span className="enrichment-value enrichment-add">
-              {p.word_type}
-            </span>
+            <span className="enrichment-value enrichment-add">{p.word_type}</span>
           </div>
         )}
 

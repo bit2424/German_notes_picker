@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   onSend: (text: string, files: File[], enrich: boolean) => void;
@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function ChatInput({ onSend, disabled }: Props) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [enrich, setEnrich] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -15,7 +15,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-    ta.style.height = "auto";
+    ta.style.height = 'auto';
     ta.style.height = `${Math.min(ta.scrollHeight, 150)}px`;
   }, [text]);
 
@@ -23,13 +23,13 @@ export default function ChatInput({ onSend, disabled }: Props) {
     e.preventDefault();
     if (!text.trim() && files.length === 0) return;
     onSend(text, files, enrich);
-    setText("");
+    setText('');
     setFiles([]);
-    if (fileRef.current) fileRef.current.value = "";
+    if (fileRef.current) fileRef.current.value = '';
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -43,7 +43,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
 
   function removeFile(idx: number) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
-    if (fileRef.current) fileRef.current.value = "";
+    if (fileRef.current) fileRef.current.value = '';
   }
 
   return (
@@ -52,21 +52,13 @@ export default function ChatInput({ onSend, disabled }: Props) {
         <div className="file-previews">
           {files.map((f, i) => (
             <div key={i} className="file-preview">
-              {f.type.startsWith("image/") ? (
-                <img
-                  src={URL.createObjectURL(f)}
-                  alt={f.name}
-                  className="file-thumb"
-                />
+              {f.type.startsWith('image/') ? (
+                <img src={URL.createObjectURL(f)} alt={f.name} className="file-thumb" />
               ) : (
                 <span className="file-icon">📄</span>
               )}
               <span className="file-name">{f.name}</span>
-              <button
-                type="button"
-                className="file-remove"
-                onClick={() => removeFile(i)}
-              >
+              <button type="button" className="file-remove" onClick={() => removeFile(i)}>
                 ×
               </button>
             </div>
@@ -93,12 +85,16 @@ export default function ChatInput({ onSend, disabled }: Props) {
         />
         <button
           type="button"
-          className={`enrich-toggle ${enrich ? "active" : ""}`}
+          className={`enrich-toggle ${enrich ? 'active' : ''}`}
           onClick={() => setEnrich((v) => !v)}
           disabled={disabled}
-          title={enrich ? "Full Enrichment: grammar details, tags, explanations (slower)" : "Quick Save: basic word + translation (fast)"}
+          title={
+            enrich
+              ? 'Full Enrichment: grammar details, tags, explanations (slower)'
+              : 'Quick Save: basic word + translation (fast)'
+          }
         >
-          {enrich ? "Enrich" : "Quick"}
+          {enrich ? 'Enrich' : 'Quick'}
         </button>
         <textarea
           ref={textareaRef}
@@ -111,7 +107,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           rows={1}
         />
         <button type="submit" className="send-btn" disabled={disabled}>
-          {disabled ? "..." : "→"}
+          {disabled ? '...' : '→'}
         </button>
       </div>
     </form>

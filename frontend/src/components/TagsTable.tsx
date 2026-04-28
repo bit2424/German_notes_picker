@@ -1,11 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { type Tag, type TagPracticeStats, fetchTags, fetchTagPracticeStats, createTag, deleteTag } from "../api";
+import { useEffect, useMemo, useState } from 'react';
+import {
+  type Tag,
+  type TagPracticeStats,
+  fetchTags,
+  fetchTagPracticeStats,
+  createTag,
+  deleteTag,
+} from '../api';
 
 export default function TagsTable() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("");
-  const [newName, setNewName] = useState("");
+  const [filter, setFilter] = useState('');
+  const [newName, setNewName] = useState('');
   const [tagStats, setTagStats] = useState<Record<string, TagPracticeStats>>({});
 
   useEffect(() => {
@@ -32,11 +39,11 @@ export default function TagsTable() {
     if (!newName.trim()) return;
     const tag = await createTag(newName.trim());
     setTags((prev) => [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)));
-    setNewName("");
+    setNewName('');
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this tag?")) return;
+    if (!confirm('Delete this tag?')) return;
     await deleteTag(id);
     setTags((prev) => prev.filter((t) => t.id !== id));
   }
@@ -63,10 +70,14 @@ export default function TagsTable() {
             placeholder="New tag name…"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCreate();
+            }}
           />
           {newName.trim() && (
-            <button className="row-btn save-btn" onClick={handleCreate}>Create</button>
+            <button className="row-btn save-btn" onClick={handleCreate}>
+              Create
+            </button>
           )}
         </div>
 
@@ -89,16 +100,16 @@ export default function TagsTable() {
                       <div className="tag-stats-cols">
                         <span>{stats.total_attempts} practiced</span>
                         <span>{stats.correct} correct</span>
-                        {stats.accuracy != null && (
-                          <span>{Math.round(stats.accuracy * 100)}%</span>
-                        )}
+                        {stats.accuracy != null && <span>{Math.round(stats.accuracy * 100)}%</span>}
                       </div>
                     ) : (
-                      <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>—</span>
+                      <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>—</span>
                     )}
                   </td>
                   <td className="actions-col">
-                    <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>Delete</button>
+                    <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               );

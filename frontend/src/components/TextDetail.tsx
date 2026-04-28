@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 import {
   type TextDetails,
   type WordItem,
@@ -7,11 +7,11 @@ import {
   linkTextWord,
   unlinkTextWord,
   addTextTranslation,
-} from "../api";
-import TagPills from "./TagPills";
-import ExplanationsList from "./ExplanationsList";
-import CorrectionsList from "./CorrectionsList";
-import TranslationsSection from "./TranslationsSection";
+} from '../api';
+import TagPills from './TagPills';
+import ExplanationsList from './ExplanationsList';
+import CorrectionsList from './CorrectionsList';
+import TranslationsSection from './TranslationsSection';
 
 interface Props {
   textId: string;
@@ -67,13 +67,17 @@ export default function TextDetail({ textId }: Props) {
   );
 }
 
-function LinkedWords({ textId, links, onChange }: {
+function LinkedWords({
+  textId,
+  links,
+  onChange,
+}: {
   textId: string;
-  links: TextDetails["text_words"];
+  links: TextDetails['text_words'];
   onChange: () => void;
 }) {
   const [showSearch, setShowSearch] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [allWords, setAllWords] = useState<WordItem[]>([]);
 
   useEffect(() => {
@@ -82,12 +86,12 @@ function LinkedWords({ textId, links, onChange }: {
 
   const linkedIds = new Set(links.map((l) => l.word_id));
   const suggestions = allWords.filter(
-    (w) => !linkedIds.has(w.id) && w.german.toLowerCase().includes(query.toLowerCase())
+    (w) => !linkedIds.has(w.id) && w.german.toLowerCase().includes(query.toLowerCase()),
   );
 
   async function handleLink(wordId: string) {
     await linkTextWord(textId, wordId, links.length);
-    setQuery("");
+    setQuery('');
     setShowSearch(false);
     onChange();
   }
@@ -101,8 +105,10 @@ function LinkedWords({ textId, links, onChange }: {
     <div className="linked-words">
       {links.map((l) => (
         <div key={l.id} className="linked-word-row">
-          <span className="linked-word-german">{l.words?.german ?? "?"}</span>
-          <button className="row-btn delete-btn" onClick={() => handleUnlink(l.id)}>Unlink</button>
+          <span className="linked-word-german">{l.words?.german ?? '?'}</span>
+          <button className="row-btn delete-btn" onClick={() => handleUnlink(l.id)}>
+            Unlink
+          </button>
         </div>
       ))}
       {showSearch ? (
@@ -114,8 +120,11 @@ function LinkedWords({ textId, links, onChange }: {
             placeholder="Search word to link…"
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === "Escape") { setShowSearch(false); setQuery(""); }
-              if (e.key === "Enter" && suggestions.length > 0) handleLink(suggestions[0].id);
+              if (e.key === 'Escape') {
+                setShowSearch(false);
+                setQuery('');
+              }
+              if (e.key === 'Enter' && suggestions.length > 0) handleLink(suggestions[0].id);
             }}
           />
           {query && (
@@ -130,7 +139,9 @@ function LinkedWords({ textId, links, onChange }: {
           )}
         </div>
       ) : (
-        <button className="row-btn edit-btn" onClick={() => setShowSearch(true)}>+ Link word</button>
+        <button className="row-btn edit-btn" onClick={() => setShowSearch(true)}>
+          + Link word
+        </button>
       )}
     </div>
   );

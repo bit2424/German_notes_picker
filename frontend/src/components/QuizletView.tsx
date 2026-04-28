@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 import {
   type QuizQuestion,
   type SavedQuizlet,
@@ -11,9 +11,9 @@ import {
   startQuizRun,
   completeQuizRun,
   deleteQuizlet,
-} from "../api";
+} from '../api';
 
-type Phase = "home" | "setup" | "loading" | "session" | "results";
+type Phase = 'home' | 'setup' | 'loading' | 'session' | 'results';
 
 interface SessionResult {
   questionId: string;
@@ -21,14 +21,14 @@ interface SessionResult {
 }
 
 export default function QuizletView() {
-  const [phase, setPhase] = useState<Phase>("home");
+  const [phase, setPhase] = useState<Phase>('home');
 
   // saved quizlets list
   const [savedQuizlets, setSavedQuizlets] = useState<SavedQuizlet[]>([]);
   const [quizletsLoading, setQuizletsLoading] = useState(true);
 
   // setup fields
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [poolCount, setPoolCount] = useState(15);
   const [questionCount, setQuestionCount] = useState(10);
@@ -70,34 +70,34 @@ export default function QuizletView() {
 
   function handleTagToggle(tagId: string) {
     setSelectedTagIds((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
     );
   }
 
   async function handleGenerateAndSave() {
     if (!prompt.trim() && selectedTagIds.length === 0) return;
     setError(null);
-    setPhase("loading");
+    setPhase('loading');
     try {
       const quizlet = await generateAndSaveQuizlet({
         prompt: prompt.trim() || undefined,
         tag_ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         pool_count: poolCount,
         question_count: questionCount,
-        types: ["flashcard", "multiple_choice"],
+        types: ['flashcard', 'multiple_choice'],
         name: prompt.trim() || undefined,
       });
       if (!quizlet.questions || quizlet.questions.length === 0) {
-        setError("No questions could be generated. Try different tags or a broader prompt.");
-        setPhase("setup");
+        setError('No questions could be generated. Try different tags or a broader prompt.');
+        setPhase('setup');
         return;
       }
       setActiveQuizlet(quizlet);
       loadQuizlets();
       await startRunFromQuizlet(quizlet.id, questionCount);
     } catch {
-      setError("Failed to generate quiz. Please try again.");
-      setPhase("setup");
+      setError('Failed to generate quiz. Please try again.');
+      setPhase('setup');
     }
   }
 
@@ -112,24 +112,21 @@ export default function QuizletView() {
       setFlipped(false);
       setSelectedOption(null);
       setHintOpen(false);
-      setPhase("session");
+      setPhase('session');
     } catch {
-      setError("Failed to start quiz run.");
-      setPhase("home");
+      setError('Failed to start quiz run.');
+      setPhase('home');
     }
   }
 
   async function handlePractice(quizlet: SavedQuizlet) {
     setActiveQuizlet(quizlet);
-    setPhase("loading");
+    setPhase('loading');
     await startRunFromQuizlet(quizlet.id, quizlet.default_question_count);
   }
 
   function handleFlashcardAnswer(correct: boolean) {
-    setResults((prev) => [
-      ...prev,
-      { questionId: questions[currentIdx].id, correct },
-    ]);
+    setResults((prev) => [...prev, { questionId: questions[currentIdx].id, correct }]);
     goNext();
   }
 
@@ -137,10 +134,7 @@ export default function QuizletView() {
     if (selectedOption !== null) return;
     setSelectedOption(option);
     const isCorrect = option === questions[currentIdx].answer;
-    setResults((prev) => [
-      ...prev,
-      { questionId: questions[currentIdx].id, correct: isCorrect },
-    ]);
+    setResults((prev) => [...prev, { questionId: questions[currentIdx].id, correct: isCorrect }]);
   }
 
   function goNext() {
@@ -162,14 +156,15 @@ export default function QuizletView() {
           question_id: r.questionId,
           word_id: q?.word_id,
           correct: r.correct,
-          question_type: q?.type ?? "flashcard",
+          question_type: q?.type ?? 'flashcard',
         };
       });
       if (currentIdx + 1 >= questions.length) {
         const lastQ = questions[currentIdx];
-        const lastCorrect = selectedOption !== null
-          ? selectedOption === lastQ.answer
-          : results[results.length - 1]?.correct ?? false;
+        const lastCorrect =
+          selectedOption !== null
+            ? selectedOption === lastQ.answer
+            : (results[results.length - 1]?.correct ?? false);
         const lastAlready = answers.some((a) => a.question_id === lastQ.id);
         if (!lastAlready) {
           answers.push({
@@ -187,17 +182,17 @@ export default function QuizletView() {
       }
       loadQuizlets();
     }
-    setPhase("results");
+    setPhase('results');
   }
 
   async function handleRetryNewSubset() {
     if (!activeQuizlet) return;
-    setPhase("loading");
+    setPhase('loading');
     await startRunFromQuizlet(activeQuizlet.id, activeQuizlet.default_question_count);
   }
 
   function handleBackToHome() {
-    setPhase("home");
+    setPhase('home');
     setActiveQuizlet(null);
     setActiveRun(null);
     setQuestions([]);
@@ -211,12 +206,12 @@ export default function QuizletView() {
 
   function handleGoToSetup() {
     loadTags();
-    setPhase("setup");
+    setPhase('setup');
     setError(null);
   }
 
   async function handleDeleteQuizlet(id: string) {
-    if (!confirm("Delete this saved quiz?")) return;
+    if (!confirm('Delete this saved quiz?')) return;
     try {
       await deleteQuizlet(id);
       setSavedQuizlets((prev) => prev.filter((q) => q.id !== id));
@@ -228,7 +223,7 @@ export default function QuizletView() {
   const score = results.filter((r) => r.correct).length;
 
   // ── Home: saved quizlets list ──
-  if (phase === "home") {
+  if (phase === 'home') {
     return (
       <div className="quizlet-view">
         <div className="quiz-home">
@@ -252,7 +247,11 @@ export default function QuizletView() {
             <div className="quiz-saved-list">
               {savedQuizlets.map((q) => {
                 const typesArr: string[] = (() => {
-                  try { return JSON.parse(q.types); } catch { return []; }
+                  try {
+                    return JSON.parse(q.types);
+                  } catch {
+                    return [];
+                  }
                 })();
                 const lastRun = q.runs?.[0];
                 return (
@@ -262,15 +261,15 @@ export default function QuizletView() {
                       <div className="quiz-saved-card-meta">
                         <span>{q.pool_count} questions in pool</span>
                         <span>{q.default_question_count} per run</span>
-                        {typesArr.length > 0 && (
-                          <span>{typesArr.join(", ")}</span>
-                        )}
+                        {typesArr.length > 0 && <span>{typesArr.join(', ')}</span>}
                       </div>
                     </div>
                     {q.tags && q.tags.length > 0 && (
                       <div className="quiz-saved-card-tags">
                         {q.tags.map((t) => (
-                          <span key={t.id} className="quiz-tag-pill selected">{t.name}</span>
+                          <span key={t.id} className="quiz-tag-pill selected">
+                            {t.name}
+                          </span>
                         ))}
                       </div>
                     )}
@@ -283,10 +282,7 @@ export default function QuizletView() {
                       </div>
                     )}
                     <div className="quiz-saved-card-actions">
-                      <button
-                        className="quiz-action-btn got-it"
-                        onClick={() => handlePractice(q)}
-                      >
+                      <button className="quiz-action-btn got-it" onClick={() => handlePractice(q)}>
                         Practice
                       </button>
                       <button
@@ -307,12 +303,14 @@ export default function QuizletView() {
   }
 
   // ── Setup: create new quiz ──
-  if (phase === "setup") {
+  if (phase === 'setup') {
     return (
       <div className="quizlet-view">
         <div className="quiz-setup">
           <div className="quiz-setup-top-row">
-            <button className="quiz-back-btn" onClick={handleBackToHome}>&larr; Back</button>
+            <button className="quiz-back-btn" onClick={handleBackToHome}>
+              &larr; Back
+            </button>
             <h2 className="quiz-setup-title">Create a New Quiz</h2>
           </div>
 
@@ -325,7 +323,7 @@ export default function QuizletView() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleGenerateAndSave();
+                if (e.key === 'Enter') handleGenerateAndSave();
               }}
             />
           </label>
@@ -339,7 +337,7 @@ export default function QuizletView() {
               {allTags.map((tag) => (
                 <button
                   key={tag.id}
-                  className={`quiz-tag-pill ${selectedTagIds.includes(tag.id) ? "selected" : ""}`}
+                  className={`quiz-tag-pill ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
                   onClick={() => handleTagToggle(tag.id)}
                 >
                   {tag.name}
@@ -368,7 +366,9 @@ export default function QuizletView() {
                 min={1}
                 max={poolCount}
                 value={questionCount}
-                onChange={(e) => setQuestionCount(Math.max(1, Math.min(poolCount, parseInt(e.target.value) || 1)))}
+                onChange={(e) =>
+                  setQuestionCount(Math.max(1, Math.min(poolCount, parseInt(e.target.value) || 1)))
+                }
               />
             </label>
           </div>
@@ -388,7 +388,7 @@ export default function QuizletView() {
   }
 
   // ── Loading ──
-  if (phase === "loading") {
+  if (phase === 'loading') {
     return (
       <div className="quizlet-view">
         <div className="quiz-loading">
@@ -400,7 +400,7 @@ export default function QuizletView() {
   }
 
   // ── Session ──
-  if (phase === "session" && questions.length > 0) {
+  if (phase === 'session' && questions.length > 0) {
     return (
       <div className="quizlet-view">
         <div className="quiz-session">
@@ -408,7 +408,7 @@ export default function QuizletView() {
             <div className="quiz-progress-bar">
               <div
                 className="quiz-progress-fill"
-                style={{ width: `${((currentIdx) / questions.length) * 100}%` }}
+                style={{ width: `${(currentIdx / questions.length) * 100}%` }}
               />
             </div>
             <span className="quiz-progress-text">
@@ -416,10 +416,10 @@ export default function QuizletView() {
             </span>
           </div>
 
-          {questions[currentIdx].type === "flashcard" ? (
+          {questions[currentIdx].type === 'flashcard' ? (
             <div className="quiz-card-wrapper">
               <div
-                className={`quiz-card ${flipped ? "flipped" : ""}`}
+                className={`quiz-card ${flipped ? 'flipped' : ''}`}
                 onClick={() => setFlipped((f) => !f)}
               >
                 <div className="quiz-card-front">
@@ -428,18 +428,15 @@ export default function QuizletView() {
                   <p className="quiz-card-german">{questions[currentIdx].german}</p>
                   {questions[currentIdx].hint && (
                     <div className="quiz-hint-wrapper" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="quiz-hint-toggle"
-                        onClick={() => setHintOpen((o) => !o)}
-                      >
-                        {hintOpen ? "▲ Tipp verbergen" : "▼ Tipp anzeigen"}
+                      <button className="quiz-hint-toggle" onClick={() => setHintOpen((o) => !o)}>
+                        {hintOpen ? '▲ Tipp verbergen' : '▼ Tipp anzeigen'}
                       </button>
-                      {hintOpen && (
-                        <p className="quiz-card-hint">{questions[currentIdx].hint}</p>
-                      )}
+                      {hintOpen && <p className="quiz-card-hint">{questions[currentIdx].hint}</p>}
                     </div>
                   )}
-                  <p className="quiz-card-tap">{flipped ? "Click to flip back" : "Click to reveal answer"}</p>
+                  <p className="quiz-card-tap">
+                    {flipped ? 'Click to flip back' : 'Click to reveal answer'}
+                  </p>
                 </div>
                 <div className="quiz-card-back">
                   <span className="quiz-card-type-badge">Answer</span>
@@ -471,24 +468,19 @@ export default function QuizletView() {
                 <p className="quiz-card-german">{questions[currentIdx].german}</p>
                 {questions[currentIdx].hint && (
                   <div className="quiz-hint-wrapper">
-                    <button
-                      className="quiz-hint-toggle"
-                      onClick={() => setHintOpen((o) => !o)}
-                    >
-                      {hintOpen ? "▲ Tipp verbergen" : "▼ Tipp anzeigen"}
+                    <button className="quiz-hint-toggle" onClick={() => setHintOpen((o) => !o)}>
+                      {hintOpen ? '▲ Tipp verbergen' : '▼ Tipp anzeigen'}
                     </button>
-                    {hintOpen && (
-                      <p className="quiz-card-hint">{questions[currentIdx].hint}</p>
-                    )}
+                    {hintOpen && <p className="quiz-card-hint">{questions[currentIdx].hint}</p>}
                   </div>
                 )}
               </div>
               <div className="quiz-options">
                 {questions[currentIdx].options.map((opt) => {
-                  let cls = "quiz-option";
+                  let cls = 'quiz-option';
                   if (selectedOption !== null) {
-                    if (opt === questions[currentIdx].answer) cls += " correct";
-                    else if (opt === selectedOption) cls += " wrong";
+                    if (opt === questions[currentIdx].answer) cls += ' correct';
+                    else if (opt === selectedOption) cls += ' wrong';
                   }
                   return (
                     <button
@@ -504,7 +496,7 @@ export default function QuizletView() {
               </div>
               {selectedOption !== null && (
                 <button className="quiz-next-btn" onClick={goNext}>
-                  {currentIdx + 1 >= questions.length ? "See Results" : "Next"}
+                  {currentIdx + 1 >= questions.length ? 'See Results' : 'Next'}
                 </button>
               )}
             </div>
@@ -515,7 +507,7 @@ export default function QuizletView() {
   }
 
   // ── Results ──
-  if (phase === "results") {
+  if (phase === 'results') {
     return (
       <div className="quizlet-view">
         <div className="quiz-results">
@@ -527,10 +519,10 @@ export default function QuizletView() {
           </div>
           <p className="quiz-score-label">
             {score === questions.length
-              ? "Perfect score!"
+              ? 'Perfect score!'
               : score >= questions.length * 0.7
-                ? "Great job!"
-                : "Keep practicing!"}
+                ? 'Great job!'
+                : 'Keep practicing!'}
           </p>
 
           {results.some((r) => !r.correct) && (

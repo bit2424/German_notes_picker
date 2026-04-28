@@ -1,8 +1,8 @@
-const API_BASE = "/api";
+const API_BASE = '/api';
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   attachments?: { filename: string; size: number }[] | null;
   created_at: string;
@@ -12,7 +12,7 @@ export interface Translation {
   id: string;
   word_id?: string | null;
   text_id?: string | null;
-  language: "es" | "en";
+  language: 'es' | 'en';
   translation: string;
   created_at: string;
 }
@@ -20,7 +20,7 @@ export interface Translation {
 export interface WordItem {
   id: string;
   german: string;
-  word_type: "verb" | "noun" | "adjective" | "other";
+  word_type: 'verb' | 'noun' | 'adjective' | 'other';
   source: string | null;
   date: string | null;
   sender: string | null;
@@ -55,13 +55,10 @@ export async function fetchChats(): Promise<{ chats: Chat[] }> {
   return res.json();
 }
 
-export async function createChat(
-  name: string,
-  description?: string
-): Promise<Chat> {
+export async function createChat(name: string, description?: string): Promise<Chat> {
   const res = await fetch(`${API_BASE}/chats`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, description }),
   });
   if (!res.ok) throw new Error(`Chat create failed: ${res.status}`);
@@ -70,11 +67,11 @@ export async function createChat(
 
 export async function updateChat(
   id: string,
-  fields: Partial<Pick<Chat, "name" | "description">>
+  fields: Partial<Pick<Chat, 'name' | 'description'>>,
 ): Promise<Chat> {
   const res = await fetch(`${API_BASE}/chats/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Chat update failed: ${res.status}`);
@@ -82,7 +79,7 @@ export async function updateChat(
 }
 
 export async function deleteChat(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/chats/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/chats/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Chat delete failed: ${res.status}`);
 }
 
@@ -92,17 +89,17 @@ export async function sendMessage(
   chatId: string,
   text: string,
   files: File[],
-  enrich: boolean = false
+  enrich: boolean = false,
 ): Promise<{ reply: string; intake_proposals?: IntakeProposal[] }> {
   const form = new FormData();
-  form.append("message", text);
-  form.append("enrich", enrich ? "true" : "false");
+  form.append('message', text);
+  form.append('enrich', enrich ? 'true' : 'false');
   for (const f of files) {
-    form.append("files", f);
+    form.append('files', f);
   }
 
   const res = await fetch(`${API_BASE}/chats/${chatId}/messages`, {
-    method: "POST",
+    method: 'POST',
     body: form,
   });
 
@@ -112,7 +109,7 @@ export async function sendMessage(
 
 export async function fetchHistory(
   chatId: string,
-  limit = 50
+  limit = 50,
 ): Promise<{ messages: ChatMessage[] }> {
   const res = await fetch(`${API_BASE}/chats/${chatId}/messages?limit=${limit}`);
   if (!res.ok) throw new Error(`History request failed: ${res.status}`);
@@ -122,13 +119,13 @@ export async function fetchHistory(
 // ── Translation suggestions ─────────────────────────
 
 export interface TranslationSuggestion {
-  language: "es" | "en";
+  language: 'es' | 'en';
   text: string;
 }
 
 export interface WordSuggestion {
   german: string;
-  word_type: "noun" | "verb" | "adjective" | "other";
+  word_type: 'noun' | 'verb' | 'adjective' | 'other';
   article: string | null;
   translations: TranslationSuggestion[];
 }
@@ -138,7 +135,7 @@ export interface SuggestionResponse {
 }
 
 export interface ConfirmedWordTranslation {
-  language: "es" | "en";
+  language: 'es' | 'en';
   translation: string;
 }
 
@@ -149,12 +146,10 @@ export interface ConfirmedWord {
   translations: ConfirmedWordTranslation[];
 }
 
-export async function suggestTranslations(
-  words: string[]
-): Promise<SuggestionResponse> {
+export async function suggestTranslations(words: string[]): Promise<SuggestionResponse> {
   const res = await fetch(`${API_BASE}/suggest-translations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ words }),
   });
   if (!res.ok) throw new Error(`Suggest failed: ${res.status}`);
@@ -162,11 +157,11 @@ export async function suggestTranslations(
 }
 
 export async function batchStoreWords(
-  words: ConfirmedWord[]
+  words: ConfirmedWord[],
 ): Promise<{ stored: number; word_ids: string[] }> {
   const res = await fetch(`${API_BASE}/words/batch`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ words }),
   });
   if (!res.ok) throw new Error(`Batch store failed: ${res.status}`);
@@ -175,9 +170,7 @@ export async function batchStoreWords(
 
 // ── Words ───────────────────────────────────────────
 
-export async function fetchWords(
-  limit = 200
-): Promise<{ words: WordItem[] }> {
+export async function fetchWords(limit = 200): Promise<{ words: WordItem[] }> {
   const res = await fetch(`${API_BASE}/words?limit=${limit}`);
   if (!res.ok) throw new Error(`Words fetch failed: ${res.status}`);
   return res.json();
@@ -185,11 +178,11 @@ export async function fetchWords(
 
 export async function updateWord(
   id: string,
-  fields: Partial<Pick<WordItem, "german" | "word_type" | "source">>
+  fields: Partial<Pick<WordItem, 'german' | 'word_type' | 'source'>>,
 ): Promise<WordItem> {
   const res = await fetch(`${API_BASE}/words/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Word update failed: ${res.status}`);
@@ -197,7 +190,7 @@ export async function updateWord(
 }
 
 export async function deleteWord(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/words/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/words/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Word delete failed: ${res.status}`);
 }
 
@@ -205,11 +198,11 @@ export async function deleteWord(id: string): Promise<void> {
 
 export async function updateTranslation(
   id: string,
-  fields: Partial<Pick<Translation, "language" | "translation">>
+  fields: Partial<Pick<Translation, 'language' | 'translation'>>,
 ): Promise<Translation> {
   const res = await fetch(`${API_BASE}/translations/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Translation update failed: ${res.status}`);
@@ -218,9 +211,7 @@ export async function updateTranslation(
 
 // ── Texts ───────────────────────────────────────────
 
-export async function fetchTexts(
-  limit = 200
-): Promise<{ texts: TextItem[] }> {
+export async function fetchTexts(limit = 200): Promise<{ texts: TextItem[] }> {
   const res = await fetch(`${API_BASE}/texts?limit=${limit}`);
   if (!res.ok) throw new Error(`Texts fetch failed: ${res.status}`);
   return res.json();
@@ -228,11 +219,11 @@ export async function fetchTexts(
 
 export async function updateText(
   id: string,
-  fields: Partial<Pick<TextItem, "content" | "source">>
+  fields: Partial<Pick<TextItem, 'content' | 'source'>>,
 ): Promise<TextItem> {
   const res = await fetch(`${API_BASE}/texts/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Text update failed: ${res.status}`);
@@ -240,14 +231,14 @@ export async function updateText(
 }
 
 export async function deleteText(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/texts/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/texts/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Text delete failed: ${res.status}`);
 }
 
-export async function createText(content: string, source = "manual"): Promise<TextItem> {
+export async function createText(content: string, source = 'manual'): Promise<TextItem> {
   const res = await fetch(`${API_BASE}/texts`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content, source }),
   });
   if (!res.ok) throw new Error(`Text create failed: ${res.status}`);
@@ -267,22 +258,22 @@ export interface VerbDetails {
   present_wir: string | null;
   present_ihr: string | null;
   present_sie: string | null;
-  case_rule: "akkusativ" | "dativ" | "akkusativ+dativ" | null;
+  case_rule: 'akkusativ' | 'dativ' | 'akkusativ+dativ' | null;
   is_reflexive: boolean;
 }
 
 export interface NounDetails {
   id: string;
   word_id: string;
-  article: "der" | "die" | "das" | null;
+  article: 'der' | 'die' | 'das' | null;
   plural: string | null;
 }
 
 export interface AdjDeclension {
   id: string;
   word_id: string;
-  case_type: "nominativ" | "akkusativ" | "dativ" | "genitiv";
-  gender: "maskulin" | "feminin" | "neutrum" | "plural";
+  case_type: 'nominativ' | 'akkusativ' | 'dativ' | 'genitiv';
+  gender: 'maskulin' | 'feminin' | 'neutrum' | 'plural';
   form: string;
 }
 
@@ -307,7 +298,7 @@ export interface Correction {
   original_text: string;
   corrected_text: string;
   note: string | null;
-  status: "pending" | "accepted" | "rejected";
+  status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
 }
 
@@ -342,10 +333,14 @@ export async function fetchWordDetail(id: string): Promise<WordDetails> {
   return res.json();
 }
 
-export async function createWord(german: string, wordType = "other", source = "manual"): Promise<WordItem> {
+export async function createWord(
+  german: string,
+  wordType = 'other',
+  source = 'manual',
+): Promise<WordItem> {
   const res = await fetch(`${API_BASE}/words`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ german, word_type: wordType, source }),
   });
   if (!res.ok) throw new Error(`Word create failed: ${res.status}`);
@@ -362,11 +357,25 @@ export async function fetchTextDetail(id: string): Promise<TextDetails> {
 
 export async function upsertVerbDetails(
   wordId: string,
-  fields: Partial<Pick<VerbDetails, "infinitive" | "participle" | "present_ich" | "present_du" | "present_er" | "present_wir" | "present_ihr" | "present_sie" | "case_rule" | "is_reflexive">>
+  fields: Partial<
+    Pick<
+      VerbDetails,
+      | 'infinitive'
+      | 'participle'
+      | 'present_ich'
+      | 'present_du'
+      | 'present_er'
+      | 'present_wir'
+      | 'present_ihr'
+      | 'present_sie'
+      | 'case_rule'
+      | 'is_reflexive'
+    >
+  >,
 ): Promise<VerbDetails> {
   const res = await fetch(`${API_BASE}/words/${wordId}/verb-details`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Verb details upsert failed: ${res.status}`);
@@ -374,7 +383,7 @@ export async function upsertVerbDetails(
 }
 
 export async function deleteVerbDetails(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/verb-details/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/verb-details/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Verb details delete failed: ${res.status}`);
 }
 
@@ -382,11 +391,11 @@ export async function deleteVerbDetails(id: string): Promise<void> {
 
 export async function upsertNounDetails(
   wordId: string,
-  fields: Partial<Pick<NounDetails, "article" | "plural">>
+  fields: Partial<Pick<NounDetails, 'article' | 'plural'>>,
 ): Promise<NounDetails> {
   const res = await fetch(`${API_BASE}/words/${wordId}/noun-details`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Noun details upsert failed: ${res.status}`);
@@ -394,7 +403,7 @@ export async function upsertNounDetails(
 }
 
 export async function deleteNounDetails(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/noun-details/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/noun-details/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Noun details delete failed: ${res.status}`);
 }
 
@@ -402,11 +411,11 @@ export async function deleteNounDetails(id: string): Promise<void> {
 
 export async function createAdjDeclension(
   wordId: string,
-  fields: { case_type: string; gender: string; form: string }
+  fields: { case_type: string; gender: string; form: string },
 ): Promise<AdjDeclension> {
   const res = await fetch(`${API_BASE}/words/${wordId}/adjective-declensions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Adj declension create failed: ${res.status}`);
@@ -415,11 +424,11 @@ export async function createAdjDeclension(
 
 export async function updateAdjDeclension(
   id: string,
-  fields: { form: string }
+  fields: { form: string },
 ): Promise<AdjDeclension> {
   const res = await fetch(`${API_BASE}/adjective-declensions/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Adj declension update failed: ${res.status}`);
@@ -431,11 +440,11 @@ export async function updateAdjDeclension(
 export async function createExplanation(
   entityType: string,
   entityId: string,
-  content: string
+  content: string,
 ): Promise<Explanation> {
   const res = await fetch(`${API_BASE}/explanations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entity_type: entityType, entity_id: entityId, content }),
   });
   if (!res.ok) throw new Error(`Explanation create failed: ${res.status}`);
@@ -444,8 +453,8 @@ export async function createExplanation(
 
 export async function updateExplanation(id: string, content: string): Promise<Explanation> {
   const res = await fetch(`${API_BASE}/explanations/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),
   });
   if (!res.ok) throw new Error(`Explanation update failed: ${res.status}`);
@@ -453,7 +462,7 @@ export async function updateExplanation(id: string, content: string): Promise<Ex
 }
 
 export async function deleteExplanation(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/explanations/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/explanations/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Explanation delete failed: ${res.status}`);
 }
 
@@ -467,8 +476,8 @@ export async function fetchTags(): Promise<{ tags: Tag[] }> {
 
 export async function createTag(name: string): Promise<Tag> {
   const res = await fetch(`${API_BASE}/tags`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   });
   if (!res.ok) throw new Error(`Tag create failed: ${res.status}`);
@@ -476,7 +485,7 @@ export async function createTag(name: string): Promise<Tag> {
 }
 
 export async function deleteTag(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/tags/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/tags/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Tag delete failed: ${res.status}`);
 }
 
@@ -484,43 +493,43 @@ export async function deleteTag(id: string): Promise<void> {
 
 export async function addWordTag(wordId: string, tagId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/words/${wordId}/tags`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag_id: tagId }),
   });
   if (!res.ok) throw new Error(`Add word tag failed: ${res.status}`);
 }
 
 export async function removeWordTag(wordId: string, tagId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/words/${wordId}/tags/${tagId}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/words/${wordId}/tags/${tagId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Remove word tag failed: ${res.status}`);
 }
 
 export async function addTextTag(textId: string, tagId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/texts/${textId}/tags`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag_id: tagId }),
   });
   if (!res.ok) throw new Error(`Add text tag failed: ${res.status}`);
 }
 
 export async function removeTextTag(textId: string, tagId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/texts/${textId}/tags/${tagId}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/texts/${textId}/tags/${tagId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Remove text tag failed: ${res.status}`);
 }
 
 export async function addExplanationTag(explId: string, tagId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/explanations/${explId}/tags`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag_id: tagId }),
   });
   if (!res.ok) throw new Error(`Add explanation tag failed: ${res.status}`);
 }
 
 export async function removeExplanationTag(explId: string, tagId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/explanations/${explId}/tags/${tagId}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/explanations/${explId}/tags/${tagId}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Remove explanation tag failed: ${res.status}`);
 }
 
@@ -534,8 +543,8 @@ export async function createCorrection(fields: {
   note?: string;
 }): Promise<Correction> {
   const res = await fetch(`${API_BASE}/corrections`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Correction create failed: ${res.status}`);
@@ -544,11 +553,11 @@ export async function createCorrection(fields: {
 
 export async function updateCorrection(
   id: string,
-  fields: Partial<Pick<Correction, "status" | "note" | "corrected_text">>
+  fields: Partial<Pick<Correction, 'status' | 'note' | 'corrected_text'>>,
 ): Promise<Correction> {
   const res = await fetch(`${API_BASE}/corrections/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) throw new Error(`Correction update failed: ${res.status}`);
@@ -556,16 +565,20 @@ export async function updateCorrection(
 }
 
 export async function deleteCorrection(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/corrections/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/corrections/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Correction delete failed: ${res.status}`);
 }
 
 // ── Text-word links ─────────────────────────────────
 
-export async function linkTextWord(textId: string, wordId: string, position?: number): Promise<TextWordLink> {
+export async function linkTextWord(
+  textId: string,
+  wordId: string,
+  position?: number,
+): Promise<TextWordLink> {
   const res = await fetch(`${API_BASE}/texts/${textId}/words`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ word_id: wordId, position }),
   });
   if (!res.ok) throw new Error(`Link text-word failed: ${res.status}`);
@@ -573,7 +586,7 @@ export async function linkTextWord(textId: string, wordId: string, position?: nu
 }
 
 export async function unlinkTextWord(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/text-words/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/text-words/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Unlink text-word failed: ${res.status}`);
 }
 
@@ -613,27 +626,25 @@ export interface ApplyResult {
 export async function proposeEnrichments(
   wordIds?: string[],
   limit = 10,
-  filter = "all"
+  filter = 'all',
 ): Promise<{ proposals: EnrichmentProposal[] }> {
   const payload: Record<string, unknown> = { limit, filter };
   if (wordIds && wordIds.length > 0) {
     payload.word_ids = wordIds;
   }
   const res = await fetch(`${API_BASE}/enrich/words/propose`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Enrich propose failed: ${res.status}`);
   return res.json();
 }
 
-export async function applyEnrichments(
-  approved: EnrichmentProposal[]
-): Promise<ApplyResult> {
+export async function applyEnrichments(approved: EnrichmentProposal[]): Promise<ApplyResult> {
   const res = await fetch(`${API_BASE}/enrich/words/apply`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ approved }),
   });
   if (!res.ok) throw new Error(`Enrich apply failed: ${res.status}`);
@@ -675,12 +686,10 @@ export interface IntakeApplyResult {
   }[];
 }
 
-export async function applyIntake(
-  approved: IntakeProposal[]
-): Promise<IntakeApplyResult> {
+export async function applyIntake(approved: IntakeProposal[]): Promise<IntakeApplyResult> {
   const res = await fetch(`${API_BASE}/intake/apply`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ approved }),
   });
   if (!res.ok) throw new Error(`Intake apply failed: ${res.status}`);
@@ -691,7 +700,7 @@ export async function applyIntake(
 
 export interface QuizQuestion {
   id: string;
-  type: "flashcard" | "multiple_choice";
+  type: 'flashcard' | 'multiple_choice';
   prompt: string;
   german: string;
   answer: string;
@@ -707,8 +716,8 @@ export async function generateQuiz(params: {
   types?: string[];
 }): Promise<{ questions: QuizQuestion[] }> {
   const res = await fetch(`${API_BASE}/quizzes/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error(`Quiz generate failed: ${res.status}`);
@@ -784,8 +793,8 @@ export async function generateAndSaveQuizlet(params: {
   name?: string;
 }): Promise<SavedQuizlet> {
   const res = await fetch(`${API_BASE}/quizlets/generate-and-save`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error(`Generate and save failed: ${res.status}`);
@@ -805,14 +814,14 @@ export async function fetchQuizletDetail(id: string): Promise<SavedQuizlet> {
 }
 
 export async function deleteQuizlet(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/quizlets/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/quizlets/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Quizlet delete failed: ${res.status}`);
 }
 
 export async function startQuizRun(quizletId: string, questionCount?: number): Promise<QuizRun> {
   const res = await fetch(`${API_BASE}/quizlets/${quizletId}/runs`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question_count: questionCount }),
   });
   if (!res.ok) throw new Error(`Start run failed: ${res.status}`);
@@ -821,8 +830,8 @@ export async function startQuizRun(quizletId: string, questionCount?: number): P
 
 export async function completeQuizRun(runId: string, answers: ReviewAnswer[]): Promise<QuizRun> {
   const res = await fetch(`${API_BASE}/quiz-runs/${runId}/complete`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers }),
   });
   if (!res.ok) throw new Error(`Complete run failed: ${res.status}`);
@@ -850,20 +859,28 @@ export async function fetchTagPracticeStats(): Promise<{ tags: TagPracticeStats[
 
 // ── Translation add/delete ──────────────────────────
 
-export async function addTranslation(wordId: string, language: string, translation: string): Promise<Translation> {
+export async function addTranslation(
+  wordId: string,
+  language: string,
+  translation: string,
+): Promise<Translation> {
   const res = await fetch(`${API_BASE}/words/${wordId}/translations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ language, translation }),
   });
   if (!res.ok) throw new Error(`Add translation failed: ${res.status}`);
   return res.json();
 }
 
-export async function addTextTranslation(textId: string, language: string, translation: string): Promise<Translation> {
+export async function addTextTranslation(
+  textId: string,
+  language: string,
+  translation: string,
+): Promise<Translation> {
   const res = await fetch(`${API_BASE}/texts/${textId}/translations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ language, translation }),
   });
   if (!res.ok) throw new Error(`Add text translation failed: ${res.status}`);
@@ -871,6 +888,6 @@ export async function addTextTranslation(textId: string, language: string, trans
 }
 
 export async function deleteTranslation(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/translations/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/translations/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Delete translation failed: ${res.status}`);
 }

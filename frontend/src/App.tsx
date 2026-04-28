@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 import {
   type Chat,
   type ChatMessage as ChatMessageType,
@@ -13,17 +13,17 @@ import {
   batchStoreWords,
   updateChat,
   deleteChat,
-} from "./api";
-import ChatInput from "./components/ChatInput";
-import ChatMessage from "./components/ChatMessage";
-import ChatList from "./components/ChatList";
-import IntakeReview from "./components/IntakeReview";
-import TranslationSuggestionCard from "./components/TranslationSuggestionCard";
-import LibraryView from "./components/LibraryView";
-import QuizletView from "./components/QuizletView";
-import "./App.css";
+} from './api';
+import ChatInput from './components/ChatInput';
+import ChatMessage from './components/ChatMessage';
+import ChatList from './components/ChatList';
+import IntakeReview from './components/IntakeReview';
+import TranslationSuggestionCard from './components/TranslationSuggestionCard';
+import LibraryView from './components/LibraryView';
+import QuizletView from './components/QuizletView';
+import './App.css';
 
-type View = "chat" | "library" | "quizlet";
+type View = 'chat' | 'library' | 'quizlet';
 
 function detectWordList(text: string): string[] | null {
   const trimmed = text.trim();
@@ -31,11 +31,17 @@ function detectWordList(text: string): string[] | null {
 
   let segments: string[];
 
-  const lines = trimmed.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = trimmed
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
   if (lines.length >= 2) {
     segments = lines;
   } else {
-    const dotParts = trimmed.split(".").map((s) => s.trim()).filter(Boolean);
+    const dotParts = trimmed
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (dotParts.length >= 2) {
       segments = dotParts;
     } else {
@@ -50,7 +56,7 @@ function detectWordList(text: string): string[] | null {
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState<View>("chat");
+  const [activeView, setActiveView] = useState<View>('chat');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [chats, setChats] = useState<Chat[]>([]);
@@ -58,19 +64,21 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [loading, setLoading] = useState(false);
   const [enriching, setEnriching] = useState(false);
-  const [pendingSuggestions, setPendingSuggestions] =
-    useState<SuggestionResponse | null>(null);
-  const [pendingIntakeProposals, setPendingIntakeProposals] =
-    useState<IntakeProposal[] | null>(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState<SuggestionResponse | null>(null);
+  const [pendingIntakeProposals, setPendingIntakeProposals] = useState<IntakeProposal[] | null>(
+    null,
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchChats().then((data) => {
-      setChats(data.chats);
-      if (data.chats.length > 0 && !activeChatId) {
-        setActiveChatId(data.chats[0].id);
-      }
-    }).catch(() => {});
+    fetchChats()
+      .then((data) => {
+        setChats(data.chats);
+        if (data.chats.length > 0 && !activeChatId) {
+          setActiveChatId(data.chats[0].id);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -84,15 +92,15 @@ export default function App() {
   }, [activeChatId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   async function handleNewChat() {
     try {
-      const chat = await createChat("New Chat");
+      const chat = await createChat('New Chat');
       setChats((prev) => [chat, ...prev]);
       setActiveChatId(chat.id);
-      setActiveView("chat");
+      setActiveView('chat');
     } catch {
       /* swallow */
     }
@@ -108,7 +116,7 @@ export default function App() {
   }
 
   async function handleDeleteChat(id: string) {
-    if (!confirm("Delete this chat?")) return;
+    if (!confirm('Delete this chat?')) return;
     try {
       await deleteChat(id);
       setChats((prev) => prev.filter((c) => c.id !== id));
@@ -123,7 +131,7 @@ export default function App() {
 
   function handleSelectChat(id: string) {
     setActiveChatId(id);
-    setActiveView("chat");
+    setActiveView('chat');
   }
 
   async function handleSend(text: string, files: File[], enrich: boolean = false) {
@@ -133,7 +141,7 @@ export default function App() {
 
     const userMsg: ChatMessageType = {
       id: crypto.randomUUID(),
-      role: "user",
+      role: 'user',
       content: text,
       attachments: files.map((f) => ({ filename: f.name, size: f.size })),
       created_at: new Date().toISOString(),
@@ -148,8 +156,8 @@ export default function App() {
       } catch {
         const errorMsg: ChatMessageType = {
           id: crypto.randomUUID(),
-          role: "assistant",
-          content: "Failed to get translation suggestions. Please try again.",
+          role: 'assistant',
+          content: 'Failed to get translation suggestions. Please try again.',
           created_at: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMsg]);
@@ -164,7 +172,7 @@ export default function App() {
       const response = await sendMessage(activeChatId, text, files, enrich);
       const assistantMsg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
+        role: 'assistant',
         content: response.reply,
         created_at: new Date().toISOString(),
       };
@@ -175,8 +183,8 @@ export default function App() {
     } catch {
       const errorMsg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Something went wrong. Please try again.",
+        role: 'assistant',
+        content: 'Something went wrong. Please try again.',
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -192,20 +200,20 @@ export default function App() {
       const result = await batchStoreWords(words);
       setPendingSuggestions(null);
       const summary = words
-        .map((w) => `${w.german} (${w.translations.map((t) => t.translation).join(", ")})`)
-        .join("\n");
+        .map((w) => `${w.german} (${w.translations.map((t) => t.translation).join(', ')})`)
+        .join('\n');
       const confirmMsg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: `Stored ${result.stored} word${result.stored === 1 ? "" : "s"}:\n${summary}`,
+        role: 'assistant',
+        content: `Stored ${result.stored} word${result.stored === 1 ? '' : 's'}:\n${summary}`,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, confirmMsg]);
     } catch {
       const errorMsg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Failed to store words. Please try again.",
+        role: 'assistant',
+        content: 'Failed to store words. Please try again.',
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -218,8 +226,8 @@ export default function App() {
     setPendingSuggestions(null);
     const cancelMsg: ChatMessageType = {
       id: crypto.randomUUID(),
-      role: "assistant",
-      content: "Suggestions dismissed.",
+      role: 'assistant',
+      content: 'Suggestions dismissed.',
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, cancelMsg]);
@@ -230,16 +238,16 @@ export default function App() {
     if (applied) {
       const msg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Words saved successfully!",
+        role: 'assistant',
+        content: 'Words saved successfully!',
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, msg]);
     } else {
       const msg: ChatMessageType = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Word proposals dismissed.",
+        role: 'assistant',
+        content: 'Word proposals dismissed.',
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, msg]);
@@ -250,42 +258,42 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className={`sidebar ${sidebarOpen ? "" : "collapsed"}`}>
+      <aside className={`sidebar ${sidebarOpen ? '' : 'collapsed'}`}>
         <div className="sidebar-header">
           {sidebarOpen && <h1 className="sidebar-title">German Notes</h1>}
           <button
             className="sidebar-toggle"
             onClick={() => setSidebarOpen((o) => !o)}
-            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            {sidebarOpen ? "\u2039" : "\u203A"}
+            {sidebarOpen ? '\u2039' : '\u203A'}
           </button>
         </div>
         <nav className="sidebar-nav">
           <button
-            className={`sidebar-link ${activeView === "chat" ? "active" : ""}`}
-            onClick={() => setActiveView("chat")}
+            className={`sidebar-link ${activeView === 'chat' ? 'active' : ''}`}
+            onClick={() => setActiveView('chat')}
             title="Chat"
           >
-            {sidebarOpen ? "Chat" : "C"}
+            {sidebarOpen ? 'Chat' : 'C'}
           </button>
           <button
-            className={`sidebar-link ${activeView === "library" ? "active" : ""}`}
-            onClick={() => setActiveView("library")}
+            className={`sidebar-link ${activeView === 'library' ? 'active' : ''}`}
+            onClick={() => setActiveView('library')}
             title="Library"
           >
-            {sidebarOpen ? "Library" : "L"}
+            {sidebarOpen ? 'Library' : 'L'}
           </button>
           <button
-            className={`sidebar-link ${activeView === "quizlet" ? "active" : ""}`}
-            onClick={() => setActiveView("quizlet")}
+            className={`sidebar-link ${activeView === 'quizlet' ? 'active' : ''}`}
+            onClick={() => setActiveView('quizlet')}
             title="Quizlet"
           >
-            {sidebarOpen ? "Quizlet" : "Q"}
+            {sidebarOpen ? 'Quizlet' : 'Q'}
           </button>
         </nav>
 
-        {sidebarOpen && activeView === "chat" && (
+        {sidebarOpen && activeView === 'chat' && (
           <ChatList
             chats={chats}
             activeChatId={activeChatId}
@@ -298,7 +306,7 @@ export default function App() {
       </aside>
 
       <div className="main-content">
-        {activeView === "chat" ? (
+        {activeView === 'chat' ? (
           <>
             {activeChat && (
               <div className="chat-header">
@@ -340,7 +348,9 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="message-bubble typing">
-                      <span></span><span></span><span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                   )}
                 </div>
@@ -348,14 +358,11 @@ export default function App() {
               <div ref={bottomRef} />
             </main>
             {pendingIntakeProposals && pendingIntakeProposals.length > 0 && (
-              <IntakeReview
-                proposals={pendingIntakeProposals}
-                onDone={handleIntakeReviewDone}
-              />
+              <IntakeReview proposals={pendingIntakeProposals} onDone={handleIntakeReviewDone} />
             )}
             {activeChatId && <ChatInput onSend={handleSend} disabled={loading} />}
           </>
-        ) : activeView === "library" ? (
+        ) : activeView === 'library' ? (
           <LibraryView />
         ) : (
           <QuizletView />

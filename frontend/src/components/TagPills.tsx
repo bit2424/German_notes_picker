@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   type Tag,
   fetchTags,
@@ -9,10 +9,10 @@ import {
   removeTextTag,
   addExplanationTag,
   removeExplanationTag,
-} from "../api";
+} from '../api';
 
 interface Props {
-  entityType: "word" | "text" | "explanation";
+  entityType: 'word' | 'text' | 'explanation';
   entityId: string;
   tags: Tag[];
   onChange: () => void;
@@ -24,7 +24,7 @@ const removeFns = { word: removeWordTag, text: removeTextTag, explanation: remov
 export default function TagPills({ entityType, entityId, tags, onChange }: Props) {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [showInput, setShowInput] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (showInput) fetchTags().then((d) => setAllTags(d.tags));
@@ -32,13 +32,13 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
 
   const assignedIds = new Set(tags.map((t) => t.id));
   const suggestions = allTags.filter(
-    (t) => !assignedIds.has(t.id) && t.name.toLowerCase().includes(query.toLowerCase())
+    (t) => !assignedIds.has(t.id) && t.name.toLowerCase().includes(query.toLowerCase()),
   );
   const exactMatch = allTags.some((t) => t.name.toLowerCase() === query.toLowerCase());
 
   async function handleAdd(tagId: string) {
     await addFns[entityType](entityId, tagId);
-    setQuery("");
+    setQuery('');
     setShowInput(false);
     onChange();
   }
@@ -52,7 +52,7 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
     if (!query.trim()) return;
     const tag = await createTag(query.trim());
     await addFns[entityType](entityId, tag.id);
-    setQuery("");
+    setQuery('');
     setShowInput(false);
     onChange();
   }
@@ -76,11 +76,11 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
             placeholder="Tag name…"
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === "Escape") {
+              if (e.key === 'Escape') {
                 setShowInput(false);
-                setQuery("");
+                setQuery('');
               }
-              if (e.key === "Enter" && query.trim()) {
+              if (e.key === 'Enter' && query.trim()) {
                 if (suggestions.length > 0) handleAdd(suggestions[0].id);
                 else handleCreateAndAdd();
               }
@@ -94,7 +94,10 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
                 </button>
               ))}
               {!exactMatch && query.trim() && (
-                <button className="tag-dropdown-item tag-dropdown-create" onClick={handleCreateAndAdd}>
+                <button
+                  className="tag-dropdown-item tag-dropdown-create"
+                  onClick={handleCreateAndAdd}
+                >
                   Create "{query.trim()}"
                 </button>
               )}
