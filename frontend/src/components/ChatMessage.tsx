@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import Chip from '@mui/material/Chip';
 import type { ChatMessage as ChatMessageType } from '../api';
 
 interface Props {
@@ -22,9 +23,7 @@ export default function ChatMessage({ message }: Props) {
         {message.attachments && message.attachments.length > 0 && (
           <div className="attachments">
             {message.attachments.map((a, i) => (
-              <span key={i} className="attachment-chip">
-                {a.filename}
-              </span>
+              <Chip key={i} label={a.filename} size="small" variant="outlined" />
             ))}
           </div>
         )}

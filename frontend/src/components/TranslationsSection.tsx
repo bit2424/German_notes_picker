@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import { type Translation, updateTranslation, deleteTranslation } from '../api';
 
 interface Props {
@@ -40,8 +43,7 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
           <span className="translation-lang">{t.language.toUpperCase()}</span>
           {editingId === t.id ? (
             <>
-              <input
-                className="cell-input"
+              <TextField
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onKeyDown={(e) => {
@@ -49,55 +51,63 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
                   if (e.key === 'Escape') setEditingId(null);
                 }}
                 autoFocus
+                size="small"
+                variant="outlined"
+                fullWidth
               />
-              <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>
+              <Button size="small" variant="contained" onClick={() => saveEdit(t.id)}>
                 Save
-              </button>
-              <button className="row-btn cancel-btn" onClick={() => setEditingId(null)}>
+              </Button>
+              <Button size="small" onClick={() => setEditingId(null)}>
                 Cancel
-              </button>
+              </Button>
             </>
           ) : (
             <>
               <span className="translation-text">{t.translation}</span>
-              <button
-                className="row-btn edit-btn"
+              <Button
+                size="small"
                 onClick={() => {
                   setEditingId(t.id);
                   setEditText(t.translation);
                 }}
               >
                 Edit
-              </button>
-              <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>
+              </Button>
+              <Button size="small" color="error" onClick={() => handleDelete(t.id)}>
                 Delete
-              </button>
+              </Button>
             </>
           )}
         </div>
       ))}
       <div className="translation-add-row">
-        <select
-          className="cell-input cell-input-sm-select"
+        <TextField
+          select
           value={newLang}
           onChange={(e) => setNewLang(e.target.value as 'es' | 'en')}
+          size="small"
+          variant="outlined"
+          sx={{ minWidth: 80 }}
         >
-          <option value="es">ES</option>
-          <option value="en">EN</option>
-        </select>
-        <input
-          className="cell-input"
+          <MenuItem value="es">ES</MenuItem>
+          <MenuItem value="en">EN</MenuItem>
+        </TextField>
+        <TextField
           value={newText}
           placeholder="New translation…"
           onChange={(e) => setNewText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd();
           }}
+          size="small"
+          variant="outlined"
+          fullWidth
         />
         {newText.trim() && (
-          <button className="row-btn save-btn" onClick={handleAdd}>
+          <Button size="small" variant="contained" onClick={handleAdd}>
             Add
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { type Explanation, createExplanation, updateExplanation, deleteExplanation } from '../api';
 import TagPills from './TagPills';
 
@@ -44,31 +46,35 @@ export default function ExplanationsList({ entityType, entityId, explanations, o
         <div key={e.id} className="explanation-card">
           {editingId === e.id ? (
             <div className="explanation-edit-row">
-              <textarea
-                className="explanation-textarea"
+              <TextField
                 value={editContent}
                 onChange={(ev) => setEditContent(ev.target.value)}
                 autoFocus
+                multiline
+                minRows={2}
+                fullWidth
+                size="small"
+                variant="outlined"
               />
               <div className="explanation-edit-actions">
-                <button className="row-btn save-btn" onClick={() => saveEdit(e.id)}>
+                <Button size="small" variant="contained" onClick={() => saveEdit(e.id)}>
                   Save
-                </button>
-                <button className="row-btn cancel-btn" onClick={() => setEditingId(null)}>
+                </Button>
+                <Button size="small" onClick={() => setEditingId(null)}>
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
             <div className="explanation-content-row">
               <p className="explanation-text">{e.content}</p>
               <div className="explanation-actions">
-                <button className="row-btn edit-btn" onClick={() => startEdit(e)}>
+                <Button size="small" onClick={() => startEdit(e)}>
                   Edit
-                </button>
-                <button className="row-btn delete-btn" onClick={() => handleDelete(e.id)}>
+                </Button>
+                <Button size="small" color="error" onClick={() => handleDelete(e.id)}>
                   Delete
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -76,11 +82,15 @@ export default function ExplanationsList({ entityType, entityId, explanations, o
         </div>
       ))}
       <div className="add-row">
-        <textarea
-          className="explanation-textarea"
+        <TextField
           value={newContent}
           onChange={(e) => setNewContent(e.target.value)}
           placeholder="Add an explanation…"
+          multiline
+          minRows={2}
+          fullWidth
+          size="small"
+          variant="outlined"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -89,9 +99,9 @@ export default function ExplanationsList({ entityType, entityId, explanations, o
           }}
         />
         {newContent.trim() && (
-          <button className="row-btn save-btn" onClick={handleAdd}>
+          <Button size="small" variant="contained" onClick={handleAdd}>
             Add
-          </button>
+          </Button>
         )}
       </div>
     </div>

@@ -1,35 +1,28 @@
 import { useState } from 'react';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import WordsTable from './WordsTable';
 import TextsTable from './TextsTable';
 import TagsTable from './TagsTable';
 
-type Tab = 'words' | 'texts' | 'tags';
+type LibraryTab = 'words' | 'texts' | 'tags';
 
 export default function LibraryView() {
-  const [activeTab, setActiveTab] = useState<Tab>('words');
+  const [activeTab, setActiveTab] = useState<LibraryTab>('words');
 
   return (
     <div className="library-view">
-      <nav className="sub-tabs">
-        <button
-          className={`sub-tab ${activeTab === 'words' ? 'active' : ''}`}
-          onClick={() => setActiveTab('words')}
-        >
-          Words
-        </button>
-        <button
-          className={`sub-tab ${activeTab === 'texts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('texts')}
-        >
-          Texts
-        </button>
-        <button
-          className={`sub-tab ${activeTab === 'tags' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tags')}
-        >
-          Tags
-        </button>
-      </nav>
+      <Tabs
+        value={activeTab}
+        onChange={(_, v) => setActiveTab(v as LibraryTab)}
+        className="sub-tabs"
+        textColor="primary"
+        indicatorColor="primary"
+      >
+        <Tab label="Words" value="words" />
+        <Tab label="Texts" value="texts" />
+        <Tab label="Tags" value="tags" />
+      </Tabs>
 
       {activeTab === 'words' && <WordsTable />}
       {activeTab === 'texts' && <TextsTable />}

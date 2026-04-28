@@ -1,4 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { type TextItem, deleteText, fetchTexts, updateText, createText } from '../api';
 import TextDetail from './TextDetail';
 
@@ -192,9 +194,9 @@ export default function TextsTable() {
         <div className="table-state-message">
           <p className="table-state-title">Failed to load texts</p>
           <p className="table-state-subtitle">Something went wrong while fetching your texts.</p>
-          <button className="row-btn save-btn" onClick={doFetch}>
+          <Button size="small" variant="contained" onClick={doFetch}>
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -206,9 +208,9 @@ export default function TextsTable() {
         <div className="table-state-message">
           <p className="table-state-title">No texts stored yet</p>
           <p className="table-state-subtitle">Start building your collection by adding a text.</p>
-          <button className="row-btn save-btn" onClick={() => setShowCreate(true)}>
+          <Button size="small" variant="contained" onClick={() => setShowCreate(true)}>
             + Add text
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -223,13 +225,15 @@ export default function TextsTable() {
               <label className="table-search-label" htmlFor="texts-search">
                 Search texts
               </label>
-              <input
+              <TextField
                 id="texts-search"
-                type="text"
                 className="table-filter table-filter-primary"
                 placeholder="Search German or translation…"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
+                size="small"
+                variant="outlined"
+                fullWidth
               />
             </div>
             <div className="table-toolbar-actions">
@@ -239,9 +243,9 @@ export default function TextsTable() {
                   <span className="table-count-secondary">{tableSummarySecondary}</span>
                 )}
               </div>
-              <button className="row-btn save-btn" onClick={() => setShowCreate(!showCreate)}>
+              <Button size="small" variant="contained" onClick={() => setShowCreate(!showCreate)}>
                 {showCreate ? 'Close' : '+ Add'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -266,8 +270,7 @@ export default function TextsTable() {
 
         {showCreate && (
           <div className="create-row">
-            <input
-              className="cell-input"
+            <TextField
               placeholder="German text…"
               value={createContent}
               onChange={(e) => setCreateContent(e.target.value)}
@@ -276,13 +279,16 @@ export default function TextsTable() {
                 if (e.key === 'Escape') setShowCreate(false);
               }}
               autoFocus
+              size="small"
+              variant="outlined"
+              fullWidth
             />
-            <button className="row-btn save-btn" onClick={handleCreate}>
+            <Button size="small" variant="contained" onClick={handleCreate}>
               Create
-            </button>
-            <button className="row-btn cancel-btn" onClick={() => setShowCreate(false)}>
+            </Button>
+            <Button size="small" onClick={() => setShowCreate(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         )}
 
@@ -329,9 +335,9 @@ export default function TextsTable() {
                     <div className="table-state-message table-state-inline">
                       <p className="table-state-title">No texts match this view</p>
                       <p className="table-state-subtitle">Try adjusting your search.</p>
-                      <button className="row-btn save-btn" onClick={() => setFilter('')}>
+                      <Button size="small" variant="contained" onClick={() => setFilter('')}>
                         Clear search
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -341,35 +347,40 @@ export default function TextsTable() {
                   {editingId === t.id ? (
                     <tr className="editing-row" data-editing="true">
                       <td className="cell-text-column">
-                        <input
-                          className="cell-input"
+                        <TextField
                           value={editDraft.content ?? ''}
                           onChange={(e) => setEditDraft((d) => ({ ...d, content: e.target.value }))}
                           onKeyDown={(e) => handleEditKeyDown(e, t.id)}
                           autoFocus
+                          size="small"
+                          variant="outlined"
+                          fullWidth
                         />
                       </td>
                       <td className="cell-translation-column">
                         <div className="cell-translation-wrap">{primaryTranslation(t)}</div>
                       </td>
                       <td className="cell-source">
-                        <input
-                          className="cell-input cell-input-meta"
+                        <TextField
+                          className="cell-input-meta"
                           value={editDraft.source ?? ''}
                           onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))}
                           onKeyDown={(e) => handleEditKeyDown(e, t.id)}
                           placeholder="Source"
+                          size="small"
+                          variant="outlined"
+                          fullWidth
                         />
                       </td>
                       <td className="cell-date">{t.date ?? '—'}</td>
                       <td className="actions-col">
                         <div className="row-actions row-actions-visible">
-                          <button className="row-btn save-btn" onClick={() => saveEdit(t.id)}>
+                          <Button size="small" variant="contained" onClick={() => saveEdit(t.id)}>
                             Save
-                          </button>
-                          <button className="row-btn cancel-btn" onClick={cancelEdit}>
+                          </Button>
+                          <Button size="small" onClick={cancelEdit}>
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>

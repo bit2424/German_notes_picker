@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
 import {
   type QuizQuestion,
   type SavedQuizlet,
@@ -229,9 +233,9 @@ export default function QuizletView() {
         <div className="quiz-home">
           <div className="quiz-home-header">
             <h2 className="quiz-setup-title">My Quizzes</h2>
-            <button className="quiz-generate-btn" onClick={handleGoToSetup}>
+            <Button variant="contained" onClick={handleGoToSetup}>
               + New Quiz
-            </button>
+            </Button>
           </div>
 
           {quizletsLoading && <p className="quiz-home-loading">Loading saved quizzes...</p>}
@@ -282,15 +286,12 @@ export default function QuizletView() {
                       </div>
                     )}
                     <div className="quiz-saved-card-actions">
-                      <button className="quiz-action-btn got-it" onClick={() => handlePractice(q)}>
+                      <Button variant="contained" color="success" onClick={() => handlePractice(q)}>
                         Practice
-                      </button>
-                      <button
-                        className="quiz-action-btn missed"
-                        onClick={() => handleDeleteQuizlet(q.id)}
-                      >
+                      </Button>
+                      <Button color="error" onClick={() => handleDeleteQuizlet(q.id)}>
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -308,25 +309,25 @@ export default function QuizletView() {
       <div className="quizlet-view">
         <div className="quiz-setup">
           <div className="quiz-setup-top-row">
-            <button className="quiz-back-btn" onClick={handleBackToHome}>
-              &larr; Back
-            </button>
+            <Button onClick={handleBackToHome}>&larr; Back</Button>
             <h2 className="quiz-setup-title">Create a New Quiz</h2>
           </div>
 
-          <label className="quiz-field-label">
+          <div className="quiz-field-label">
             What do you want to practice?
-            <input
+            <TextField
               className="quiz-prompt-input"
-              type="text"
               placeholder='e.g. "food vocabulary", "verbs from this week"'
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleGenerateAndSave();
               }}
+              size="small"
+              variant="outlined"
+              fullWidth
             />
-          </label>
+          </div>
 
           <div className="quiz-field-group">
             <span className="quiz-field-label">Filter by tags</span>
@@ -335,53 +336,57 @@ export default function QuizletView() {
                 <span className="quiz-no-tags">No tags found</span>
               )}
               {allTags.map((tag) => (
-                <button
+                <Chip
                   key={tag.id}
-                  className={`quiz-tag-pill ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
+                  label={tag.name}
+                  clickable
+                  color={selectedTagIds.includes(tag.id) ? 'primary' : 'default'}
+                  variant={selectedTagIds.includes(tag.id) ? 'filled' : 'outlined'}
                   onClick={() => handleTagToggle(tag.id)}
-                >
-                  {tag.name}
-                </button>
+                  className={`quiz-tag-pill ${selectedTagIds.includes(tag.id) ? 'selected' : ''}`}
+                />
               ))}
             </div>
           </div>
 
           <div className="quiz-count-row">
-            <label className="quiz-field-label">
+            <div className="quiz-field-label">
               Total questions in pool
-              <input
+              <TextField
                 className="quiz-count-input"
                 type="number"
-                min={1}
-                max={50}
+                slotProps={{ htmlInput: { min: 1, max: 50 } }}
                 value={poolCount}
                 onChange={(e) => setPoolCount(Math.max(1, parseInt(e.target.value) || 1))}
+                size="small"
+                variant="outlined"
               />
-            </label>
-            <label className="quiz-field-label">
+            </div>
+            <div className="quiz-field-label">
               Questions per run
-              <input
+              <TextField
                 className="quiz-count-input"
                 type="number"
-                min={1}
-                max={poolCount}
+                slotProps={{ htmlInput: { min: 1, max: poolCount } }}
                 value={questionCount}
                 onChange={(e) =>
                   setQuestionCount(Math.max(1, Math.min(poolCount, parseInt(e.target.value) || 1)))
                 }
+                size="small"
+                variant="outlined"
               />
-            </label>
+            </div>
           </div>
 
           {error && <p className="quiz-error">{error}</p>}
 
-          <button
-            className="quiz-generate-btn"
+          <Button
+            variant="contained"
             onClick={handleGenerateAndSave}
             disabled={!prompt.trim() && selectedTagIds.length === 0}
           >
             Generate & Save Quiz
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -392,7 +397,7 @@ export default function QuizletView() {
     return (
       <div className="quizlet-view">
         <div className="quiz-loading">
-          <div className="quiz-loading-spinner" />
+          <CircularProgress />
           <p>Generating your quiz...</p>
         </div>
       </div>
@@ -445,18 +450,16 @@ export default function QuizletView() {
               </div>
               {flipped && (
                 <div className="quiz-flashcard-actions">
-                  <button
-                    className="quiz-action-btn missed"
-                    onClick={() => handleFlashcardAnswer(false)}
-                  >
+                  <Button color="error" onClick={() => handleFlashcardAnswer(false)}>
                     Missed it
-                  </button>
-                  <button
-                    className="quiz-action-btn got-it"
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="success"
                     onClick={() => handleFlashcardAnswer(true)}
                   >
                     Got it!
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -495,9 +498,9 @@ export default function QuizletView() {
                 })}
               </div>
               {selectedOption !== null && (
-                <button className="quiz-next-btn" onClick={goNext}>
+                <Button variant="contained" onClick={goNext}>
                   {currentIdx + 1 >= questions.length ? 'See Results' : 'Next'}
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -548,13 +551,11 @@ export default function QuizletView() {
 
           <div className="quiz-results-actions">
             {activeQuizlet && (
-              <button className="quiz-action-btn retry" onClick={handleRetryNewSubset}>
+              <Button variant="contained" onClick={handleRetryNewSubset}>
                 New Subset
-              </button>
+              </Button>
             )}
-            <button className="quiz-action-btn new-quiz" onClick={handleBackToHome}>
-              Back to Quizzes
-            </button>
+            <Button onClick={handleBackToHome}>Back to Quizzes</Button>
           </div>
         </div>
       </div>

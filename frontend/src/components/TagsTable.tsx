@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import {
   type Tag,
   type TagPracticeStats,
@@ -53,31 +55,34 @@ export default function TagsTable() {
   return (
     <div className="data-table-container">
       <div className="table-toolbar">
-        <input
-          type="text"
+        <TextField
           className="table-filter"
           placeholder="Search tags…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
+          size="small"
+          variant="outlined"
         />
         <span className="table-count">{filtered.length} tags</span>
       </div>
 
       <div className="table-scroll">
         <div className="tag-create-row">
-          <input
-            className="cell-input"
+          <TextField
             placeholder="New tag name…"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreate();
             }}
+            size="small"
+            variant="outlined"
+            fullWidth
           />
           {newName.trim() && (
-            <button className="row-btn save-btn" onClick={handleCreate}>
+            <Button size="small" variant="contained" onClick={handleCreate}>
               Create
-            </button>
+            </Button>
           )}
         </div>
 
@@ -107,9 +112,9 @@ export default function TagsTable() {
                     )}
                   </td>
                   <td className="actions-col">
-                    <button className="row-btn delete-btn" onClick={() => handleDelete(t.id)}>
+                    <Button size="small" color="error" onClick={() => handleDelete(t.id)}>
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               );

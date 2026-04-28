@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
 import {
   type Tag,
   fetchTags,
@@ -60,21 +63,24 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
   return (
     <div className="tag-pills-row">
       {tags.map((t) => (
-        <span key={t.id} className="tag-pill">
-          {t.name}
-          <button className="tag-pill-remove" onClick={() => handleRemove(t.id)}>
-            ×
-          </button>
-        </span>
+        <Chip
+          key={t.id}
+          label={t.name}
+          size="small"
+          onDelete={() => handleRemove(t.id)}
+          sx={{ borderRadius: 999 }}
+        />
       ))}
       {showInput ? (
         <span className="tag-input-wrapper">
-          <input
-            className="tag-input"
+          <TextField
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tag name…"
             autoFocus
+            size="small"
+            variant="outlined"
+            sx={{ width: 160 }}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setShowInput(false);
@@ -89,25 +95,37 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
           {query && (
             <div className="tag-dropdown">
               {suggestions.slice(0, 8).map((t) => (
-                <button key={t.id} className="tag-dropdown-item" onClick={() => handleAdd(t.id)}>
+                <Button
+                  key={t.id}
+                  className="tag-dropdown-item"
+                  onClick={() => handleAdd(t.id)}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
                   {t.name}
-                </button>
+                </Button>
               ))}
               {!exactMatch && query.trim() && (
-                <button
+                <Button
                   className="tag-dropdown-item tag-dropdown-create"
                   onClick={handleCreateAndAdd}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
                   Create "{query.trim()}"
-                </button>
+                </Button>
               )}
             </div>
           )}
         </span>
       ) : (
-        <button className="tag-pill tag-pill-add" onClick={() => setShowInput(true)}>
-          + tag
-        </button>
+        <Chip
+          label="+ tag"
+          size="small"
+          variant="outlined"
+          onClick={() => setShowInput(true)}
+          sx={{ borderRadius: 999 }}
+        />
       )}
     </div>
   );

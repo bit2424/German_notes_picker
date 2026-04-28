@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
 
 interface Props {
   onSend: (text: string, files: File[], enrich: boolean) => void;
@@ -10,14 +13,6 @@ export default function ChatInput({ onSend, disabled }: Props) {
   const [files, setFiles] = useState<File[]>([]);
   const [enrich, setEnrich] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = 'auto';
-    ta.style.height = `${Math.min(ta.scrollHeight, 150)}px`;
-  }, [text]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +23,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -58,23 +53,29 @@ export default function ChatInput({ onSend, disabled }: Props) {
                 <span className="file-icon">📄</span>
               )}
               <span className="file-name">{f.name}</span>
-              <button type="button" className="file-remove" onClick={() => removeFile(i)}>
+              <IconButton
+                type="button"
+                size="small"
+                onClick={() => removeFile(i)}
+                aria-label={`Remove ${f.name}`}
+              >
                 ×
-              </button>
+              </IconButton>
             </div>
           ))}
         </div>
       )}
       <div className="input-row">
-        <button
+        <IconButton
           type="button"
-          className="attach-btn"
           onClick={() => fileRef.current?.click()}
           disabled={disabled}
           title="Attach files"
+          aria-label="Attach files"
+          size="small"
         >
           +
-        </button>
+        </IconButton>
         <input
           ref={fileRef}
           type="file"
@@ -83,32 +84,43 @@ export default function ChatInput({ onSend, disabled }: Props) {
           onChange={handleFiles}
           hidden
         />
-        <button
-          type="button"
-          className={`enrich-toggle ${enrich ? 'active' : ''}`}
-          onClick={() => setEnrich((v) => !v)}
+        <ToggleButton
+          value="enrich"
+          selected={enrich}
+          onChange={() => setEnrich((v) => !v)}
           disabled={disabled}
+          size="small"
           title={
             enrich
               ? 'Full Enrichment: grammar details, tags, explanations (slower)'
               : 'Quick Save: basic word + translation (fast)'
           }
+          sx={{ textTransform: 'none', borderRadius: 999, px: 1.5 }}
         >
           {enrich ? 'Enrich' : 'Quick'}
-        </button>
-        <textarea
-          ref={textareaRef}
+        </ToggleButton>
+        <TextField
           className="text-input"
           placeholder="Send a word, sentence, or attach a photo..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          rows={1}
+          multiline
+          maxRows={6}
+          fullWidth
+          size="small"
+          variant="outlined"
         />
-        <button type="submit" className="send-btn" disabled={disabled}>
+        <IconButton
+          type="submit"
+          color="primary"
+          disabled={disabled}
+          aria-label="Send"
+          size="small"
+        >
           {disabled ? '...' : '→'}
-        </button>
+        </IconButton>
       </div>
     </form>
   );

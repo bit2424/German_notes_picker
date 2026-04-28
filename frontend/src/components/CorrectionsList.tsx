@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import { type Correction, createCorrection, updateCorrection, deleteCorrection } from '../api';
 
 interface Props {
@@ -50,57 +52,65 @@ export default function CorrectionsList({ wordId, textId, corrections, onChange 
             <span className={`status-badge status-${c.status}`}>{c.status}</span>
             {c.status === 'pending' && (
               <>
-                <button className="row-btn save-btn" onClick={() => handleStatus(c.id, 'accepted')}>
-                  Accept
-                </button>
-                <button
-                  className="row-btn delete-btn"
-                  onClick={() => handleStatus(c.id, 'rejected')}
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="success"
+                  onClick={() => handleStatus(c.id, 'accepted')}
                 >
+                  Accept
+                </Button>
+                <Button size="small" color="error" onClick={() => handleStatus(c.id, 'rejected')}>
                   Reject
-                </button>
+                </Button>
               </>
             )}
-            <button className="row-btn delete-btn" onClick={() => handleDelete(c.id)}>
+            <Button size="small" color="error" onClick={() => handleDelete(c.id)}>
               Delete
-            </button>
+            </Button>
           </div>
         </div>
       ))}
       {showAdd ? (
         <div className="correction-add-form">
-          <input
-            className="cell-input"
+          <TextField
             placeholder="Original text"
             value={draft.original}
             onChange={(e) => setDraft((d) => ({ ...d, original: e.target.value }))}
             autoFocus
+            size="small"
+            variant="outlined"
+            fullWidth
           />
-          <input
-            className="cell-input"
+          <TextField
             placeholder="Corrected text"
             value={draft.corrected}
             onChange={(e) => setDraft((d) => ({ ...d, corrected: e.target.value }))}
+            size="small"
+            variant="outlined"
+            fullWidth
           />
-          <input
-            className="cell-input"
+          <TextField
             placeholder="Note (optional)"
             value={draft.note}
             onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
+            size="small"
+            variant="outlined"
+            fullWidth
           />
           <div className="correction-add-actions">
-            <button className="row-btn save-btn" onClick={handleAdd}>
+            <Button size="small" variant="contained" onClick={handleAdd}>
               Add
-            </button>
-            <button className="row-btn cancel-btn" onClick={() => setShowAdd(false)}>
+            </Button>
+            <Button size="small" onClick={() => setShowAdd(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <button className="row-btn edit-btn" onClick={() => setShowAdd(true)}>
+        <Button size="small" onClick={() => setShowAdd(true)}>
           + Correction
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
 import type { Chat } from '../api';
 
 interface Props {
@@ -46,9 +48,9 @@ export default function ChatList({
     <div className="chat-list">
       <div className="chat-list-header">
         <span className="chat-list-label">Chats</span>
-        <button className="chat-list-new" onClick={onNew} title="New chat">
+        <IconButton size="small" onClick={onNew} title="New chat" aria-label="New chat">
           +
-        </button>
+        </IconButton>
       </div>
       <div className="chat-list-items">
         {chats.map((chat) => (
@@ -58,39 +60,44 @@ export default function ChatList({
             onClick={() => onSelect(chat.id)}
           >
             {editingId === chat.id ? (
-              <input
-                className="chat-list-rename"
+              <TextField
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={commitRename}
                 autoFocus
+                size="small"
+                variant="outlined"
+                fullWidth
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <>
                 <span className="chat-list-name">{chat.name}</span>
                 <span className="chat-list-actions">
-                  <button
-                    className="chat-list-action"
+                  <IconButton
+                    size="small"
                     onClick={(e) => {
                       e.stopPropagation();
                       startRename(chat);
                     }}
                     title="Rename"
+                    aria-label="Rename chat"
                   >
                     ✎
-                  </button>
-                  <button
-                    className="chat-list-action chat-list-delete"
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(chat.id);
                     }}
                     title="Delete"
+                    aria-label="Delete chat"
                   >
                     ×
-                  </button>
+                  </IconButton>
                 </span>
               </>
             )}

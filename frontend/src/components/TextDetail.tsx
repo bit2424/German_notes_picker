@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import {
   type TextDetails,
   type WordItem,
@@ -106,19 +108,21 @@ function LinkedWords({
       {links.map((l) => (
         <div key={l.id} className="linked-word-row">
           <span className="linked-word-german">{l.words?.german ?? '?'}</span>
-          <button className="row-btn delete-btn" onClick={() => handleUnlink(l.id)}>
+          <Button size="small" color="error" onClick={() => handleUnlink(l.id)}>
             Unlink
-          </button>
+          </Button>
         </div>
       ))}
       {showSearch ? (
         <div className="linked-word-search">
-          <input
-            className="cell-input"
+          <TextField
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search word to link…"
             autoFocus
+            size="small"
+            variant="outlined"
+            fullWidth
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setShowSearch(false);
@@ -130,18 +134,24 @@ function LinkedWords({
           {query && (
             <div className="tag-dropdown">
               {suggestions.slice(0, 8).map((w) => (
-                <button key={w.id} className="tag-dropdown-item" onClick={() => handleLink(w.id)}>
+                <Button
+                  key={w.id}
+                  className="tag-dropdown-item"
+                  onClick={() => handleLink(w.id)}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                >
                   {w.german}
-                </button>
+                </Button>
               ))}
               {suggestions.length === 0 && <div className="tag-dropdown-item">No matches</div>}
             </div>
           )}
         </div>
       ) : (
-        <button className="row-btn edit-btn" onClick={() => setShowSearch(true)}>
+        <Button size="small" onClick={() => setShowSearch(true)}>
           + Link word
-        </button>
+        </Button>
       )}
     </div>
   );
