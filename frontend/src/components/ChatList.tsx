@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { Chat } from '../api';
 
 interface Props {
@@ -48,9 +48,15 @@ export default function ChatList({
     <div className="chat-list">
       <div className="chat-list-header">
         <span className="chat-list-label">Chats</span>
-        <IconButton size="small" onClick={onNew} title="New chat" aria-label="New chat">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onNew}
+          title="New chat"
+          aria-label="New chat"
+        >
           +
-        </IconButton>
+        </Button>
       </div>
       <div className="chat-list-items">
         {chats.map((chat) => (
@@ -60,23 +66,21 @@ export default function ChatList({
             onClick={() => onSelect(chat.id)}
           >
             {editingId === chat.id ? (
-              <TextField
+              <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={commitRename}
                 autoFocus
-                size="small"
-                variant="outlined"
-                fullWidth
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <>
                 <span className="chat-list-name">{chat.name}</span>
                 <span className="chat-list-actions">
-                  <IconButton
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       startRename(chat);
@@ -85,10 +89,11 @@ export default function ChatList({
                     aria-label="Rename chat"
                   >
                     ✎
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="text-destructive hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(chat.id);
@@ -97,7 +102,7 @@ export default function ChatList({
                     aria-label="Delete chat"
                   >
                     ×
-                  </IconButton>
+                  </Button>
                 </span>
               </>
             )}

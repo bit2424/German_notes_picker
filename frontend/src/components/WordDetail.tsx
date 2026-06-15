@@ -1,9 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
+import { useEffect, useState, useCallback, useId } from 'react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   type WordDetails,
   type WordPracticeStats,
@@ -126,6 +132,15 @@ export default function WordDetail({ wordId }: Props) {
   );
 }
 
+function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
 function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () => void }) {
   const [editing, setEditing] = useState(false);
   const [type, setType] = useState(word.word_type);
@@ -144,7 +159,7 @@ function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () 
         <span className="detail-type-label">
           Type: <strong>{word.word_type}</strong>
         </span>
-        <Button size="small" onClick={() => setEditing(true)}>
+        <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
           Change
         </Button>
       </div>
@@ -154,24 +169,23 @@ function WordTypeSelector({ word, onChange }: { word: WordDetails; onChange: () 
   return (
     <div className="detail-section detail-section-inline">
       <span className="detail-type-label">Type:</span>
-      <TextField
-        select
-        value={type}
-        onChange={(e) => setType(e.target.value as WordDetails['word_type'])}
-        size="small"
-        variant="outlined"
-        sx={{ minWidth: 120 }}
-      >
-        <MenuItem value="verb">verb</MenuItem>
-        <MenuItem value="noun">noun</MenuItem>
-        <MenuItem value="adjective">adjective</MenuItem>
-        <MenuItem value="other">other</MenuItem>
-      </TextField>
-      <Button size="small" variant="contained" onClick={save}>
+      <Select value={type} onValueChange={(v) => setType(v as WordDetails['word_type'])}>
+        <SelectTrigger className="min-w-30">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="verb">verb</SelectItem>
+          <SelectItem value="noun">noun</SelectItem>
+          <SelectItem value="adjective">adjective</SelectItem>
+          <SelectItem value="other">other</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button size="sm" onClick={save}>
         Save
       </Button>
       <Button
-        size="small"
+        variant="ghost"
+        size="sm"
         onClick={() => {
           setType(word.word_type);
           setEditing(false);
@@ -203,6 +217,7 @@ function VerbSection({
   details: VerbDetails | null;
   onChange: () => void;
 }) {
+  const reflexiveId = useId();
   const [draft, setDraft] = useState({
     infinitive: details?.infinitive ?? '',
     participle: details?.participle ?? '',
@@ -232,65 +247,60 @@ function VerbSection({
     <div className="detail-section">
       <h4 className="detail-section-title">Verb Details</h4>
       <div className="type-fields">
-        <TextField
-          label="Infinitive"
-          value={draft.infinitive}
-          onChange={(e) => setField('infinitive', e.target.value)}
-          size="small"
-          variant="outlined"
-        />
-        <TextField
-          label="Participle"
-          value={draft.participle}
-          onChange={(e) => setField('participle', e.target.value)}
-          size="small"
-          variant="outlined"
-        />
-        <TextField
-          select
-          label="Case"
-          value={draft.case_rule}
-          onChange={(e) => setField('case_rule', e.target.value)}
-          size="small"
-          variant="outlined"
-          sx={{ minWidth: 140 }}
-        >
-          <MenuItem value="">—</MenuItem>
-          <MenuItem value="akkusativ">Akkusativ</MenuItem>
-          <MenuItem value="dativ">Dativ</MenuItem>
-          <MenuItem value="akkusativ+dativ">Akk + Dat</MenuItem>
-        </TextField>
-      </div>
-      <FormControlLabel
-        className="verb-reflexive-toggle"
-        control={
-          <Checkbox
-            checked={draft.is_reflexive}
-            onChange={(e) => setField('is_reflexive', e.target.checked)}
-            size="small"
+        <LabeledField label="Infinitive">
+          <Input
+            value={draft.infinitive}
+            onChange={(e) => setField('infinitive', e.target.value)}
           />
-        }
-        label="Reflexiv (sich)"
-      />
+        </LabeledField>
+        <LabeledField label="Participle">
+          <Input
+            value={draft.participle}
+            onChange={(e) => setField('participle', e.target.value)}
+          />
+        </LabeledField>
+        <LabeledField label="Case">
+          <Select
+            value={draft.case_rule || 'none'}
+            onValueChange={(v) => setField('case_rule', v === 'none' ? '' : v)}
+          >
+            <SelectTrigger className="min-w-35">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">—</SelectItem>
+              <SelectItem value="akkusativ">Akkusativ</SelectItem>
+              <SelectItem value="dativ">Dativ</SelectItem>
+              <SelectItem value="akkusativ+dativ">Akk + Dat</SelectItem>
+            </SelectContent>
+          </Select>
+        </LabeledField>
+      </div>
+      <div className="verb-reflexive-toggle flex items-center gap-2">
+        <Checkbox
+          id={reflexiveId}
+          checked={draft.is_reflexive}
+          onCheckedChange={(checked) => setField('is_reflexive', checked === true)}
+        />
+        <Label htmlFor={reflexiveId}>Reflexiv (sich)</Label>
+      </div>
       <div className="conjugation-section">
         <span className="conjugation-label">Präsens</span>
         <div className="conjugation-grid">
           {PRONOUNS.map(({ key, label }) => (
             <div className="conjugation-row" key={key}>
               <span className="conjugation-pronoun">{label}</span>
-              <TextField
+              <Input
                 className="conjugation-input"
                 value={draft[key as ConjugationKey]}
                 placeholder="—"
                 onChange={(e) => setField(key, e.target.value)}
-                size="small"
-                variant="outlined"
               />
             </div>
           ))}
         </div>
       </div>
-      <Button size="small" variant="contained" onClick={save}>
+      <Button size="sm" onClick={save}>
         Save verb details
       </Button>
     </div>
@@ -320,30 +330,29 @@ function NounSection({
     <div className="detail-section">
       <h4 className="detail-section-title">Noun Details</h4>
       <div className="type-fields">
-        <TextField
-          select
-          label="Article"
-          value={draft.article}
-          onChange={(e) =>
-            setDraft((d) => ({ ...d, article: e.target.value as 'der' | 'die' | 'das' }))
-          }
-          size="small"
-          variant="outlined"
-          sx={{ minWidth: 100 }}
-        >
-          <MenuItem value="der">der</MenuItem>
-          <MenuItem value="die">die</MenuItem>
-          <MenuItem value="das">das</MenuItem>
-        </TextField>
-        <TextField
-          label="Plural"
-          value={draft.plural}
-          onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))}
-          size="small"
-          variant="outlined"
-        />
+        <LabeledField label="Article">
+          <Select
+            value={draft.article}
+            onValueChange={(v) => setDraft((d) => ({ ...d, article: v as 'der' | 'die' | 'das' }))}
+          >
+            <SelectTrigger className="min-w-25">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="der">der</SelectItem>
+              <SelectItem value="die">die</SelectItem>
+              <SelectItem value="das">das</SelectItem>
+            </SelectContent>
+          </Select>
+        </LabeledField>
+        <LabeledField label="Plural">
+          <Input
+            value={draft.plural}
+            onChange={(e) => setDraft((d) => ({ ...d, plural: e.target.value }))}
+          />
+        </LabeledField>
       </div>
-      <Button size="small" variant="contained" onClick={save}>
+      <Button size="sm" onClick={save}>
         Save noun details
       </Button>
     </div>
@@ -426,12 +435,10 @@ function DeclensionCell({ value, onSave }: { value: string; onSave: (v: string) 
   }
 
   return (
-    <TextField
+    <Input
       className="declension-input"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      size="small"
-      variant="outlined"
       onBlur={() => {
         if (text !== value) onSave(text);
         setEditing(false);

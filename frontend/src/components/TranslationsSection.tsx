@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import Button from '@mui/material/Button';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { type Translation, updateTranslation, deleteTranslation } from '../api';
 
 interface Props {
@@ -43,7 +49,7 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
           <span className="translation-lang">{t.language.toUpperCase()}</span>
           {editingId === t.id ? (
             <>
-              <TextField
+              <Input
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onKeyDown={(e) => {
@@ -51,14 +57,11 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
                   if (e.key === 'Escape') setEditingId(null);
                 }}
                 autoFocus
-                size="small"
-                variant="outlined"
-                fullWidth
               />
-              <Button size="small" variant="contained" onClick={() => saveEdit(t.id)}>
+              <Button size="sm" onClick={() => saveEdit(t.id)}>
                 Save
               </Button>
-              <Button size="small" onClick={() => setEditingId(null)}>
+              <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
                 Cancel
               </Button>
             </>
@@ -66,7 +69,8 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
             <>
               <span className="translation-text">{t.translation}</span>
               <Button
-                size="small"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setEditingId(t.id);
                   setEditText(t.translation);
@@ -74,7 +78,7 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
               >
                 Edit
               </Button>
-              <Button size="small" color="error" onClick={() => handleDelete(t.id)}>
+              <Button variant="destructive" size="sm" onClick={() => handleDelete(t.id)}>
                 Delete
               </Button>
             </>
@@ -82,30 +86,25 @@ export default function TranslationsSection({ translations, onAdd, onChange }: P
         </div>
       ))}
       <div className="translation-add-row">
-        <TextField
-          select
-          value={newLang}
-          onChange={(e) => setNewLang(e.target.value as 'es' | 'en')}
-          size="small"
-          variant="outlined"
-          sx={{ minWidth: 80 }}
-        >
-          <MenuItem value="es">ES</MenuItem>
-          <MenuItem value="en">EN</MenuItem>
-        </TextField>
-        <TextField
+        <Select value={newLang} onValueChange={(v) => setNewLang(v as 'es' | 'en')}>
+          <SelectTrigger className="min-w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="es">ES</SelectItem>
+            <SelectItem value="en">EN</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
           value={newText}
           placeholder="New translation…"
           onChange={(e) => setNewText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd();
           }}
-          size="small"
-          variant="outlined"
-          fullWidth
         />
         {newText.trim() && (
-          <Button size="small" variant="contained" onClick={handleAdd}>
+          <Button size="sm" onClick={handleAdd}>
             Add
           </Button>
         )}

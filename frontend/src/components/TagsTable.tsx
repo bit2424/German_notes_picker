@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   type Tag,
   type TagPracticeStats,
@@ -55,32 +55,27 @@ export default function TagsTable() {
   return (
     <div className="data-table-container">
       <div className="table-toolbar">
-        <TextField
+        <Input
           className="table-filter"
           placeholder="Search tags…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          size="small"
-          variant="outlined"
         />
         <span className="table-count">{filtered.length} tags</span>
       </div>
 
       <div className="table-scroll">
         <div className="tag-create-row">
-          <TextField
+          <Input
             placeholder="New tag name…"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreate();
             }}
-            size="small"
-            variant="outlined"
-            fullWidth
           />
           {newName.trim() && (
-            <Button size="small" variant="contained" onClick={handleCreate}>
+            <Button size="sm" onClick={handleCreate}>
               Create
             </Button>
           )}
@@ -108,11 +103,13 @@ export default function TagsTable() {
                         {stats.accuracy != null && <span>{Math.round(stats.accuracy * 100)}%</span>}
                       </div>
                     ) : (
-                      <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>—</span>
+                      <span style={{ color: 'var(--muted-foreground)', fontSize: '0.82rem' }}>
+                        —
+                      </span>
                     )}
                   </td>
                   <td className="actions-col">
-                    <Button size="small" color="error" onClick={() => handleDelete(t.id)}>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(t.id)}>
                       Delete
                     </Button>
                   </td>

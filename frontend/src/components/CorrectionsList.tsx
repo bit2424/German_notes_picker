@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { type Correction, createCorrection, updateCorrection, deleteCorrection } from '../api';
 
 interface Props {
@@ -52,20 +52,19 @@ export default function CorrectionsList({ wordId, textId, corrections, onChange 
             <span className={`status-badge status-${c.status}`}>{c.status}</span>
             {c.status === 'pending' && (
               <>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="success"
-                  onClick={() => handleStatus(c.id, 'accepted')}
-                >
+                <Button size="sm" onClick={() => handleStatus(c.id, 'accepted')}>
                   Accept
                 </Button>
-                <Button size="small" color="error" onClick={() => handleStatus(c.id, 'rejected')}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleStatus(c.id, 'rejected')}
+                >
                   Reject
                 </Button>
               </>
             )}
-            <Button size="small" color="error" onClick={() => handleDelete(c.id)}>
+            <Button variant="destructive" size="sm" onClick={() => handleDelete(c.id)}>
               Delete
             </Button>
           </div>
@@ -73,42 +72,33 @@ export default function CorrectionsList({ wordId, textId, corrections, onChange 
       ))}
       {showAdd ? (
         <div className="correction-add-form">
-          <TextField
+          <Input
             placeholder="Original text"
             value={draft.original}
             onChange={(e) => setDraft((d) => ({ ...d, original: e.target.value }))}
             autoFocus
-            size="small"
-            variant="outlined"
-            fullWidth
           />
-          <TextField
+          <Input
             placeholder="Corrected text"
             value={draft.corrected}
             onChange={(e) => setDraft((d) => ({ ...d, corrected: e.target.value }))}
-            size="small"
-            variant="outlined"
-            fullWidth
           />
-          <TextField
+          <Input
             placeholder="Note (optional)"
             value={draft.note}
             onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
-            size="small"
-            variant="outlined"
-            fullWidth
           />
           <div className="correction-add-actions">
-            <Button size="small" variant="contained" onClick={handleAdd}>
+            <Button size="sm" onClick={handleAdd}>
               Add
             </Button>
-            <Button size="small" onClick={() => setShowAdd(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)}>
               Cancel
             </Button>
           </div>
         </div>
       ) : (
-        <Button size="small" onClick={() => setShowAdd(true)}>
+        <Button variant="ghost" size="sm" onClick={() => setShowAdd(true)}>
           + Correction
         </Button>
       )}

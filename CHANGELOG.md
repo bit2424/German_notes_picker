@@ -4,6 +4,40 @@ Progress log for the German Notes agentic system. Updated after each work sessio
 
 ---
 
+## 2026-06-11 -- UI revamp foundation: MUI -> Tailwind v4 + shadcn/ui
+
+### What was done
+
+First step of the UI revamp: replaced the MUI/custom-CSS mix with a single component system the project owns.
+
+**Tooling & theme**
+
+- Installed Tailwind CSS v4 via `@tailwindcss/vite` plugin; added `@` -> `src/` path alias (`vite.config.ts`, `tsconfig.app.json`, `tsconfig.json`).
+- Initialized shadcn/ui (`radix-nova` style, Radix primitives, Lucide icons). Generated components live in `frontend/src/components/ui/` and are owned/editable like any project code; helper in `src/lib/utils.ts`; config in `components.json`.
+- Added shadcn components: `button`, `input`, `textarea`, `select`, `dialog`, `badge`, `checkbox`, `label`, `tabs`, `toggle`, `spinner`.
+- Mapped the sage palette onto the shadcn theme tokens in `index.css` (light + dark via `prefers-color-scheme`, no `.dark` class). Resolved variable-name collisions between the legacy palette and shadcn tokens by renaming across the codebase: `--muted` -> `--muted-foreground`, `--accent` -> `--primary`, `--accent-subtle` -> `--primary-subtle`. `--border` is now shared (same semantics in both systems).
+
+**Migration (18 files)**
+
+- Removed `@mui/material`, `@emotion/react`, `@emotion/styled`; deleted `src/theme.ts` and the `ThemeProvider` wrapper in `main.tsx`.
+- Replaced all MUI usage with shadcn equivalents: `TextField` -> `Input`/`Textarea` (+ `Select` for select-mode), `Button`/`IconButton` -> `Button` variants, `Dialog*` -> shadcn `Dialog` composition, `Chip` -> `Badge`, `Checkbox`/`FormControlLabel` -> `Checkbox` + `Label`, `Tabs`/`Tab` -> shadcn `Tabs`, `ToggleButton` -> `Toggle`, `CircularProgress` -> `Spinner`.
+- Mapping conventions used: `variant="contained"` -> default (primary) variant; plain text buttons -> `variant="ghost"`; `color="error"` -> `variant="destructive"`. Radix `Select` cannot hold `value=""`, so "All …" filter options use an `'all'` sentinel mapped back to `''` in state.
+- ESLint: exempted generated `src/components/ui/**` from `react-refresh/only-export-components` (shadcn exports variant helpers alongside components).
+- App font switched to Geist Variable (installed by the shadcn preset) with Inter/system fallback.
+
+### Verified working
+
+- `npm run typecheck` clean; `npm run lint` 0 errors (28 pre-existing a11y/hooks warnings); `npm run build` succeeds; dev server serves the app.
+
+### Next steps (UI revamp roadmap)
+
+1. Redesign Library tables: two-line rows, select-mode for the Enrich column, practice stat as visual indicator.
+2. Motion pass: spring easing tokens, drawer/modal/hover transitions.
+3. Replace `confirm()` dialogs and injected chat status messages with styled confirmations and toasts (shadcn `sonner`).
+4. Gradually convert `App.css` (3,277 lines) to Tailwind utilities per component.
+
+---
+
 ## 2026-04-28 -- Unit tests: classifier, parser, orchestrator history
 
 ### What was done

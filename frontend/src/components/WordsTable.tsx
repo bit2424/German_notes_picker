@@ -1,11 +1,20 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   type WordItem,
   type WordPracticeStats,
@@ -375,7 +384,7 @@ export default function WordsTable() {
           <p className="table-state-subtitle">
             Something went wrong while fetching your vocabulary.
           </p>
-          <Button size="small" variant="contained" onClick={doFetch}>
+          <Button size="sm" onClick={doFetch}>
             Retry
           </Button>
         </div>
@@ -389,7 +398,7 @@ export default function WordsTable() {
         <div className="table-state-message">
           <p className="table-state-title">No words stored yet</p>
           <p className="table-state-subtitle">Start building your vocabulary by adding a word.</p>
-          <Button size="small" variant="contained" onClick={() => setShowCreate(true)}>
+          <Button size="sm" onClick={() => setShowCreate(true)}>
             + Add word
           </Button>
         </div>
@@ -406,15 +415,12 @@ export default function WordsTable() {
               <label className="table-search-label" htmlFor="words-search">
                 Search words
               </label>
-              <TextField
+              <Input
                 id="words-search"
                 className="table-filter table-filter-primary"
                 placeholder="Search German or translation…"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                size="small"
-                variant="outlined"
-                fullWidth
               />
             </div>
             <div className="table-toolbar-actions">
@@ -424,7 +430,7 @@ export default function WordsTable() {
                   <span className="table-count-secondary">{tableSummarySecondary}</span>
                 )}
               </div>
-              <Button size="small" variant="contained" onClick={() => setShowCreate(!showCreate)}>
+              <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                 {showCreate ? 'Close' : '+ Add'}
               </Button>
             </div>
@@ -433,57 +439,67 @@ export default function WordsTable() {
 
         <div className="table-filter-row">
           <span className="table-filter-label">Filter:</span>
-          <TextField
-            select
-            className={`table-filter-select ${filterType ? 'active' : ''}`}
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            size="small"
-            variant="outlined"
-            sx={{ minWidth: 130 }}
+          <Select
+            value={filterType || 'all'}
+            onValueChange={(v) => setFilterType(v === 'all' ? '' : v)}
           >
-            <MenuItem value="">All types</MenuItem>
-            {typeOptions.map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            className={`table-filter-select ${filterSource ? 'active' : ''}`}
-            value={filterSource}
-            onChange={(e) => setFilterSource(e.target.value)}
-            size="small"
-            variant="outlined"
-            sx={{ minWidth: 130 }}
+            <SelectTrigger
+              size="sm"
+              className={`table-filter-select min-w-32 ${filterType ? 'active' : ''}`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {typeOptions.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filterSource || 'all'}
+            onValueChange={(v) => setFilterSource(v === 'all' ? '' : v)}
           >
-            <MenuItem value="">All sources</MenuItem>
-            {sourceOptions.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            className={`table-filter-select ${filterLang ? 'active' : ''}`}
-            value={filterLang}
-            onChange={(e) => setFilterLang(e.target.value)}
-            size="small"
-            variant="outlined"
-            sx={{ minWidth: 130 }}
+            <SelectTrigger
+              size="sm"
+              className={`table-filter-select min-w-32 ${filterSource ? 'active' : ''}`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              {sourceOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filterLang || 'all'}
+            onValueChange={(v) => setFilterLang(v === 'all' ? '' : v)}
           >
-            <MenuItem value="">All languages</MenuItem>
-            {langOptions.map((l) => (
-              <MenuItem key={l} value={l}>
-                {l}
-              </MenuItem>
-            ))}
-          </TextField>
+            <SelectTrigger
+              size="sm"
+              className={`table-filter-select min-w-32 ${filterLang ? 'active' : ''}`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All languages</SelectItem>
+              {langOptions.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {hasActiveFilters && (
             <Button
-              size="small"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setFilterType('');
                 setFilterSource('');
@@ -523,16 +539,10 @@ export default function WordsTable() {
               <span className="table-bulk-label">for enrichment</span>
             </div>
             <div className="table-bulk-actions">
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                onClick={handleEnrich}
-                disabled={enriching}
-              >
+              <Button size="sm" onClick={handleEnrich} disabled={enriching}>
                 {enriching ? 'Enriching...' : 'Enrich selected'}
               </Button>
-              <Button size="small" onClick={clearVisibleSelection}>
+              <Button variant="ghost" size="sm" onClick={clearVisibleSelection}>
                 Deselect all
               </Button>
             </div>
@@ -541,7 +551,7 @@ export default function WordsTable() {
 
         {showCreate && (
           <div className="create-row">
-            <TextField
+            <Input
               placeholder="German word…"
               value={createDraft.german}
               onChange={(e) => setCreateDraft((d) => ({ ...d, german: e.target.value }))}
@@ -550,27 +560,25 @@ export default function WordsTable() {
                 if (e.key === 'Escape') setShowCreate(false);
               }}
               autoFocus
-              size="small"
-              variant="outlined"
-              fullWidth
             />
-            <TextField
-              select
+            <Select
               value={createDraft.word_type}
-              onChange={(e) => setCreateDraft((d) => ({ ...d, word_type: e.target.value }))}
-              size="small"
-              variant="outlined"
-              sx={{ minWidth: 120 }}
+              onValueChange={(v) => setCreateDraft((d) => ({ ...d, word_type: v }))}
             >
-              <MenuItem value="other">other</MenuItem>
-              <MenuItem value="verb">verb</MenuItem>
-              <MenuItem value="noun">noun</MenuItem>
-              <MenuItem value="adjective">adjective</MenuItem>
-            </TextField>
-            <Button size="small" variant="contained" onClick={handleCreate}>
+              <SelectTrigger className="min-w-30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="other">other</SelectItem>
+                <SelectItem value="verb">verb</SelectItem>
+                <SelectItem value="noun">noun</SelectItem>
+                <SelectItem value="adjective">adjective</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleCreate}>
               Create
             </Button>
-            <Button size="small" onClick={() => setShowCreate(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
               Cancel
             </Button>
           </div>
@@ -639,7 +647,7 @@ export default function WordsTable() {
                     <div className="table-state-message table-state-inline">
                       <p className="table-state-title">No words match this view</p>
                       <p className="table-state-subtitle">Try adjusting your search or filters.</p>
-                      <Button size="small" variant="contained" onClick={clearAllViewFilters}>
+                      <Button size="sm" onClick={clearAllViewFilters}>
                         Clear all filters
                       </Button>
                     </div>
@@ -652,18 +660,15 @@ export default function WordsTable() {
                     <tr className="editing-row" data-editing="true">
                       <td className="cell-german-column">
                         <div className="cell-german-stack">
-                          <TextField
+                          <Input
                             value={editDraft.german ?? ''}
                             onChange={(e) =>
                               setEditDraft((d) => ({ ...d, german: e.target.value }))
                             }
                             onKeyDown={(e) => handleEditKeyDown(e, w.id)}
                             autoFocus
-                            size="small"
-                            variant="outlined"
-                            fullWidth
                           />
-                          <TextField
+                          <Input
                             className="cell-input-meta"
                             value={editDraft.source ?? ''}
                             onChange={(e) =>
@@ -671,22 +676,16 @@ export default function WordsTable() {
                             }
                             onKeyDown={(e) => handleEditKeyDown(e, w.id)}
                             placeholder="Source"
-                            size="small"
-                            variant="outlined"
-                            fullWidth
                           />
                         </div>
                       </td>
                       <td className="cell-translation-column">
-                        <TextField
+                        <Input
                           value={editDraft.translation ?? ''}
                           onChange={(e) =>
                             setEditDraft((d) => ({ ...d, translation: e.target.value }))
                           }
                           onKeyDown={(e) => handleEditKeyDown(e, w.id)}
-                          size="small"
-                          variant="outlined"
-                          fullWidth
                         />
                       </td>
                       <td className="cell-lang-col cell-lang">{primaryLang(w)}</td>
@@ -698,10 +697,10 @@ export default function WordsTable() {
                       </td>
                       <td className="actions-col">
                         <div className="row-actions row-actions-visible">
-                          <Button size="small" variant="contained" onClick={() => saveEdit(w.id)}>
+                          <Button size="sm" onClick={() => saveEdit(w.id)}>
                             Save
                           </Button>
-                          <Button size="small" onClick={cancelEdit}>
+                          <Button variant="ghost" size="sm" onClick={cancelEdit}>
                             Cancel
                           </Button>
                         </div>
@@ -828,18 +827,18 @@ export default function WordsTable() {
       )}
 
       {proposals !== null && proposals.length === 0 && (
-        <Dialog open onClose={() => setProposals(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>No enrichments to propose</DialogTitle>
-          <DialogContent dividers>
-            <p style={{ color: 'var(--muted)', textAlign: 'center', margin: '1rem 0' }}>
+        <Dialog open onOpenChange={(open) => !open && setProposals(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>No enrichments to propose</DialogTitle>
+            </DialogHeader>
+            <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', margin: '1rem 0' }}>
               All words appear to have complete data, or the agent could not generate proposals.
             </p>
+            <DialogFooter>
+              <Button onClick={() => setProposals(null)}>Close</Button>
+            </DialogFooter>
           </DialogContent>
-          <DialogActions>
-            <Button variant="contained" onClick={() => setProposals(null)}>
-              Close
-            </Button>
-          </DialogActions>
         </Dialog>
       )}
 

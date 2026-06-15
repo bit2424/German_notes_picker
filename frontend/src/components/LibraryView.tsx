@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WordsTable from './WordsTable';
 import TextsTable from './TextsTable';
 import TagsTable from './TagsTable';
@@ -14,14 +13,14 @@ export default function LibraryView() {
     <div className="library-view">
       <Tabs
         value={activeTab}
-        onChange={(_, v) => setActiveTab(v as LibraryTab)}
+        onValueChange={(v) => setActiveTab(v as LibraryTab)}
         className="sub-tabs"
-        textColor="primary"
-        indicatorColor="primary"
       >
-        <Tab label="Words" value="words" />
-        <Tab label="Texts" value="texts" />
-        <Tab label="Tags" value="tags" />
+        <TabsList>
+          <TabsTrigger value="words">Words</TabsTrigger>
+          <TabsTrigger value="texts">Texts</TabsTrigger>
+          <TabsTrigger value="tags">Tags</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {activeTab === 'words' && <WordsTable />}

@@ -39,4 +39,12 @@ export default defineConfig([
       'react-hooks/set-state-in-effect': 'warn',
     },
   },
+  {
+    // Generated shadcn/ui components export variant helpers alongside
+    // components; exempt them from the fast-refresh constraint.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]);

@@ -3,7 +3,7 @@
   display: flex;
   height: 100dvh;
   background: var(--bg);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Geist Variable', 'Inter', system-ui, sans-serif;
 }
 
 /* ── Sidebar ─────────────────────────────────────── */
@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 1.1rem;
   flex-shrink: 0;
   transition:
@@ -83,7 +83,7 @@
   padding: 0.55rem 1.25rem;
   font-size: 0.88rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--muted-foreground);
   cursor: pointer;
   border-left: 3px solid transparent;
   transition:
@@ -104,7 +104,7 @@
 
 .sidebar.collapsed .sidebar-link.active {
   border-left: none;
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--primary);
 }
 
 .sidebar-link:hover {
@@ -113,9 +113,9 @@
 }
 
 .sidebar-link.active {
-  color: var(--accent);
-  border-left-color: var(--accent);
-  background: var(--accent-subtle);
+  color: var(--primary);
+  border-left-color: var(--primary);
+  background: var(--primary-subtle);
 }
 
 /* ── Chat list (sidebar) ────────────────────────── */
@@ -140,7 +140,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .chat-list-new {
@@ -153,7 +153,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 1rem;
   font-weight: 700;
   transition:
@@ -162,8 +162,8 @@
 }
 
 .chat-list-new:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .chat-list-items {
@@ -178,7 +178,7 @@
   padding: 0.4rem 0.75rem;
   cursor: pointer;
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   transition:
     background 0.12s,
     color 0.12s;
@@ -191,8 +191,8 @@
 }
 
 .chat-list-item.active {
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  color: var(--primary);
 }
 
 .chat-list-name {
@@ -216,7 +216,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.85rem;
   padding: 0 0.15rem;
   line-height: 1;
@@ -235,7 +235,7 @@
   flex: 1;
   padding: 0.15rem 0.3rem;
   font-size: 0.82rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--primary);
   border-radius: 0.25rem;
   background: var(--bg);
   color: var(--fg);
@@ -264,7 +264,7 @@
   padding: 0.5rem 1.25rem;
   font-size: 0.88rem;
   font-weight: 500;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   border: none;
   border-radius: 0.5rem;
@@ -304,7 +304,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.95rem;
   gap: 0.25rem;
 }
@@ -331,7 +331,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin-bottom: 0.2rem;
   padding: 0 0.25rem;
 }
@@ -346,7 +346,7 @@
 }
 
 .user .message-bubble {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   border-bottom-right-radius: 0.3rem;
 }
@@ -386,7 +386,7 @@
 .typing span {
   width: 7px;
   height: 7px;
-  background: var(--muted);
+  background: var(--muted-foreground);
   border-radius: 50%;
   animation: blink 1.2s infinite both;
 }
@@ -443,11 +443,11 @@
 }
 
 .text-input:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .text-input::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .attach-btn,
@@ -477,7 +477,7 @@
 }
 
 .send-btn {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   font-weight: 700;
 }
@@ -497,7 +497,7 @@
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -509,14 +509,14 @@
 }
 
 .enrich-toggle:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
   color: var(--fg-secondary);
 }
 
 .enrich-toggle.active {
-  background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .enrich-toggle:disabled {
@@ -529,7 +529,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--accent);
+  color: var(--primary);
   font-size: 0.85rem;
   font-style: italic;
 }
@@ -539,7 +539,7 @@
   width: 14px;
   height: 14px;
   border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: enrich-spin 0.8s linear infinite;
   flex-shrink: 0;
@@ -592,7 +592,7 @@
 .file-remove {
   background: none;
   border: none;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 1rem;
   cursor: pointer;
   padding: 0 0.15rem;
@@ -625,7 +625,7 @@
   padding: 0.45rem 0.85rem;
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--muted-foreground);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition:
@@ -638,8 +638,8 @@
 }
 
 .sub-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--primary);
+  border-bottom-color: var(--primary);
 }
 
 /* ── Table container (split layout with optional detail drawer) ── */
@@ -686,7 +686,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .table-filter {
@@ -710,11 +710,11 @@
 }
 
 .table-filter:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .table-filter::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .table-count {
@@ -725,7 +725,7 @@
 
 .table-count-secondary {
   font-size: 0.76rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 
@@ -743,7 +743,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--muted-foreground);
   margin-right: 0.15rem;
 }
 
@@ -769,17 +769,17 @@
 }
 
 .table-filter-select:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .table-filter-select:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .table-filter-select.active {
-  background-color: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  background-color: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -806,7 +806,7 @@
 .table-filter-clear {
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--primary);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -839,35 +839,35 @@
 }
 
 .table-filter-chip:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-subtle);
 }
 
 .table-filter-chip-close {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.76rem;
 }
 
 .table-filter-clear-all {
   border: none;
   background: none;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.78rem;
   cursor: pointer;
   padding: 0.2rem 0.1rem;
 }
 
 .table-filter-clear-all:hover {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .table-bulk-bar {
   margin: 0 1.5rem 0.75rem;
   padding: 0.7rem 0.85rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--primary);
   border-radius: 0.85rem;
-  background: var(--accent-subtle);
+  background: var(--primary-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -884,7 +884,7 @@
 .table-bulk-count {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .table-bulk-label {
@@ -914,7 +914,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-bottom: 2px solid var(--border);
   position: sticky;
   top: 0;
@@ -936,7 +936,7 @@
 }
 
 .data-table tbody tr:hover {
-  background: var(--accent-subtle);
+  background: var(--primary-subtle);
 }
 
 /* ── Sortable headers ────────────────────────────── */
@@ -963,7 +963,7 @@
 }
 
 .th-sort-btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -974,17 +974,17 @@
 }
 
 .sort-indicator.active {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 /* ── Row states: active, editing, selected ────────── */
 .data-table tbody tr[data-active] {
-  background: var(--accent-subtle);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--primary-subtle);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .data-table tbody tr[data-active]:hover {
-  background: var(--accent-subtle);
+  background: var(--primary-subtle);
 }
 
 .editing-row,
@@ -1037,7 +1037,7 @@
 }
 
 .cell-german-button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
@@ -1050,7 +1050,7 @@
 .cell-german-meta {
   font-size: 0.72rem;
   font-weight: 400;
-  color: var(--muted);
+  color: var(--muted-foreground);
   letter-spacing: 0;
   line-height: 1.3;
 }
@@ -1071,7 +1071,7 @@
 
 .cell-lang {
   font-size: 0.72rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -1079,7 +1079,7 @@
 
 .cell-source {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   width: 5.5rem;
   white-space: nowrap;
   overflow: hidden;
@@ -1088,7 +1088,7 @@
 
 .cell-date {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   width: 5.5rem;
   white-space: nowrap;
 }
@@ -1123,8 +1123,8 @@
   color: var(--adjective);
 }
 .word-type-badge.other {
-  background: var(--accent-subtle);
-  color: var(--muted);
+  background: var(--primary-subtle);
+  color: var(--muted-foreground);
 }
 
 /* ── Hover-reveal row actions ────────────────────── */
@@ -1152,7 +1152,7 @@
 }
 
 .cell-input:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .cell-input-sm-select {
@@ -1217,7 +1217,7 @@
 .row-menu-trigger {
   border: 1px solid transparent;
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-radius: 0.5rem;
   min-width: 2rem;
   height: 2rem;
@@ -1268,8 +1268,8 @@
 }
 
 .row-menu-item:hover {
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  color: var(--primary);
 }
 
 .row-menu-item-danger:hover {
@@ -1278,8 +1278,8 @@
 }
 
 .edit-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .delete-btn:hover {
@@ -1288,17 +1288,17 @@
 }
 
 .save-btn {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .save-btn:hover {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
 }
 
 .cancel-btn:hover {
-  border-color: var(--muted);
+  border-color: var(--muted-foreground);
 }
 
 /* ── Table states ────────────────────────────────── */
@@ -1308,7 +1308,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.9rem;
   padding: 2rem;
 }
@@ -1338,7 +1338,7 @@
 .table-state-subtitle {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .table-filtered-empty-cell {
@@ -1434,7 +1434,7 @@
   right: 0.85rem;
   border: none;
   background: none;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.95rem;
   cursor: pointer;
   width: 1.8rem;
@@ -1449,12 +1449,12 @@
 }
 
 .detail-drawer-close:hover {
-  background: var(--accent-subtle);
+  background: var(--primary-subtle);
   color: var(--fg);
 }
 
 .detail-drawer-close:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
@@ -1475,17 +1475,17 @@
 /* ── Focus-visible global improvements ───────────── */
 .table-filter-select:focus-visible,
 .table-filter:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
 .row-btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 .row-menu-trigger:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
   border-color: var(--border);
   background: var(--surface);
@@ -1494,7 +1494,7 @@
 
 
 .table-filter-chip:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
@@ -1561,8 +1561,8 @@
 }
 
 .suggestion-type-badge.other {
-  background: var(--accent-subtle);
-  color: var(--muted);
+  background: var(--primary-subtle);
+  color: var(--muted-foreground);
 }
 
 .suggestion-translations {
@@ -1582,7 +1582,7 @@
 }
 
 .suggestion-translation-item input[type='checkbox'] {
-  accent-color: var(--accent);
+  accent-color: var(--primary);
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
@@ -1593,7 +1593,7 @@
   font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-foreground);
   min-width: 1.4rem;
 }
 
@@ -1621,9 +1621,9 @@
 }
 
 .suggestion-btn.confirm {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .suggestion-btn.confirm:hover:not(:disabled) {
@@ -1637,7 +1637,7 @@
 
 .suggestion-btn.cancel {
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .suggestion-btn.cancel:hover:not(:disabled) {
@@ -1663,7 +1663,7 @@
   padding: 0.18rem 0.5rem;
   border-radius: 999px;
   background: var(--surface-raised);
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
   border: 1px solid var(--border-light);
 }
@@ -1679,7 +1679,7 @@
 
 .detail-loading {
   padding: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.85rem;
 }
 
@@ -1712,7 +1712,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .detail-type-label {
@@ -1750,7 +1750,7 @@
 .translation-lang {
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-foreground);
   min-width: 1.6rem;
 }
 
@@ -1781,7 +1781,7 @@
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .cell-input-sm-select {
@@ -1806,8 +1806,8 @@
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 999px;
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  color: var(--primary);
   white-space: nowrap;
 }
 
@@ -1815,7 +1815,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--primary);
   font-size: 0.85rem;
   line-height: 1;
   padding: 0;
@@ -1831,12 +1831,12 @@
   cursor: pointer;
   border: 1px dashed var(--border);
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .tag-pill-add:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .tag-input-wrapper {
@@ -1846,7 +1846,7 @@
 .tag-input {
   padding: 0.2rem 0.4rem;
   font-size: 0.78rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--primary);
   border-radius: 0.35rem;
   background: var(--bg);
   color: var(--fg);
@@ -1888,7 +1888,7 @@
 }
 
 .tag-dropdown-create {
-  color: var(--accent);
+  color: var(--primary);
   font-weight: 500;
   border-top: 1px solid var(--border);
 }
@@ -1956,7 +1956,7 @@
 }
 
 .explanation-textarea:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .add-row {
@@ -1998,7 +1998,7 @@
 }
 
 .correction-arrow {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8rem;
 }
 
@@ -2010,7 +2010,7 @@
 .correction-note {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-style: italic;
 }
 
@@ -2071,7 +2071,7 @@
 }
 
 .verb-reflexive-toggle input[type='checkbox'] {
-  accent-color: var(--accent);
+  accent-color: var(--primary);
   width: 1rem;
   height: 1rem;
   cursor: pointer;
@@ -2090,7 +2090,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .conjugation-grid {
@@ -2109,7 +2109,7 @@
   min-width: 4.5rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-align: right;
 }
 
@@ -2132,7 +2132,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
 }
 
@@ -2146,7 +2146,7 @@
   text-align: left !important;
   font-weight: 600;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .declension-cell {
@@ -2162,7 +2162,7 @@
 }
 
 .declension-placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
   opacity: 0.4;
 }
 
@@ -2302,8 +2302,8 @@
 }
 
 .enrichment-card.selected {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .enrichment-card-header {
@@ -2315,7 +2315,7 @@
 }
 
 .enrichment-card-header input[type='checkbox'] {
-  accent-color: var(--accent);
+  accent-color: var(--primary);
   width: 1rem;
   height: 1rem;
 }
@@ -2340,7 +2340,7 @@
 }
 
 .enrichment-label {
-  color: var(--muted);
+  color: var(--muted-foreground);
   min-width: 5.5rem;
   flex-shrink: 0;
   font-size: 0.78rem;
@@ -2482,7 +2482,7 @@
 }
 
 .enrich-checkbox:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -2541,7 +2541,7 @@ th .enrich-checkbox:checked {
   gap: 0.35rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-field-group {
@@ -2563,11 +2563,11 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-prompt-input:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .quiz-prompt-input::placeholder {
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-count-input {
@@ -2584,7 +2584,7 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-count-input:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .quiz-tag-selector {
@@ -2602,27 +2602,27 @@ th .enrich-checkbox:checked {
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
 }
 
 .quiz-tag-pill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .quiz-tag-pill.selected {
-  background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
   font-weight: 600;
 }
 
 .quiz-no-tags {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-style: italic;
 }
 
@@ -2639,7 +2639,7 @@ th .enrich-checkbox:checked {
   font-weight: 600;
   border: none;
   border-radius: 0.6rem;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -2662,7 +2662,7 @@ th .enrich-checkbox:checked {
   align-items: center;
   gap: 1rem;
   padding: 4rem 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.95rem;
 }
 
@@ -2670,7 +2670,7 @@ th .enrich-checkbox:checked {
   width: 2rem;
   height: 2rem;
   border: 3px solid var(--border);
-  border-top-color: var(--accent);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: quiz-spin 0.8s linear infinite;
 }
@@ -2707,7 +2707,7 @@ th .enrich-checkbox:checked {
 
 .quiz-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--primary);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -2715,7 +2715,7 @@ th .enrich-checkbox:checked {
 .quiz-progress-text {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 
@@ -2774,14 +2774,14 @@ th .enrich-checkbox:checked {
   letter-spacing: 0.05em;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  background: var(--accent-subtle);
-  color: var(--accent);
+  background: var(--primary-subtle);
+  color: var(--primary);
 }
 
 .quiz-card-prompt {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-align: center;
 }
 
@@ -2796,7 +2796,7 @@ th .enrich-checkbox:checked {
 .quiz-card-hint {
   margin: 0;
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-style: italic;
   text-align: center;
 }
@@ -2804,7 +2804,7 @@ th .enrich-checkbox:checked {
 .quiz-card-tap {
   margin: 0;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   opacity: 0.6;
 }
 
@@ -2812,7 +2812,7 @@ th .enrich-checkbox:checked {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary);
   text-align: center;
 }
 
@@ -2864,8 +2864,8 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-option:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--accent-subtle);
+  border-color: var(--primary);
+  background: var(--primary-subtle);
 }
 
 .quiz-option:disabled {
@@ -2890,7 +2890,7 @@ th .enrich-checkbox:checked {
   padding: 0.55rem 1.5rem;
   border: none;
   border-radius: 0.6rem;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   font-size: 0.88rem;
   font-weight: 600;
@@ -2936,16 +2936,16 @@ th .enrich-checkbox:checked {
 
 .quiz-action-btn.retry {
   background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .quiz-action-btn.retry:hover {
-  background: var(--accent-subtle);
+  background: var(--primary-subtle);
 }
 
 .quiz-action-btn.new-quiz {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   border: none;
 }
@@ -2980,26 +2980,26 @@ th .enrich-checkbox:checked {
 .quiz-score-number {
   font-size: 3rem;
   font-weight: 800;
-  color: var(--accent);
+  color: var(--primary);
   line-height: 1;
 }
 
 .quiz-score-divider {
   font-size: 2rem;
   font-weight: 300;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-score-total {
   font-size: 2rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-score-label {
   margin: 0;
   font-size: 1rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-missed-section {
@@ -3015,7 +3015,7 @@ th .enrich-checkbox:checked {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-missed-list {
@@ -3043,12 +3043,12 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-missed-arrow {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.8rem;
 }
 
 .quiz-missed-answer {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .quiz-results-actions {
@@ -3074,7 +3074,7 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-home-loading {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.88rem;
 }
 
@@ -3098,7 +3098,7 @@ th .enrich-checkbox:checked {
 .quiz-empty-sub {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-saved-list {
@@ -3119,7 +3119,7 @@ th .enrich-checkbox:checked {
 }
 
 .quiz-saved-card:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .quiz-saved-card-header {
@@ -3141,7 +3141,7 @@ th .enrich-checkbox:checked {
   flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-saved-card-tags {
@@ -3152,12 +3152,12 @@ th .enrich-checkbox:checked {
 
 .quiz-saved-card-last-run {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-saved-card-run-count {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .quiz-saved-card-actions {
@@ -3179,15 +3179,15 @@ th .enrich-checkbox:checked {
   border-radius: 0.5rem;
   padding: 0.35rem 0.75rem;
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
 
 .quiz-back-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .quiz-count-row {
@@ -3218,13 +3218,13 @@ th .enrich-checkbox:checked {
 .practice-stat-value {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--primary);
   line-height: 1;
 }
 
 .practice-stat-label {
   font-size: 0.72rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -3234,7 +3234,7 @@ th .enrich-checkbox:checked {
   display: flex;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .tag-stats-cols span {
@@ -3268,10 +3268,10 @@ td.cell-practice-col {
 
 .practice-cell-pct {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .practice-cell-count {
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 0.72rem;
 }

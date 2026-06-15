@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { type IntakeApplyResult, type IntakeProposal, applyIntake } from '../api';
 
 interface Props {
@@ -55,12 +58,14 @@ export default function IntakeReview({ proposals, onDone }: Props) {
   };
 
   return (
-    <Dialog open onClose={handleClose} maxWidth="md" fullWidth>
-      {result ? (
-        <>
-          <DialogTitle>Words Saved</DialogTitle>
-          <DialogContent dividers>
-            <div className="enrichment-result">
+    <Dialog open onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-2xl">
+        {result ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Words Saved</DialogTitle>
+            </DialogHeader>
+            <div className="enrichment-result max-h-[65vh] overflow-y-auto">
               <p className="enrichment-result-summary">
                 Saved {result.applied} of {result.total} words
               </p>
@@ -73,25 +78,21 @@ export default function IntakeReview({ proposals, onDone }: Props) {
                 ))}
               </ul>
             </div>
-          </DialogContent>
-          <DialogActions>
-            <Button variant="contained" onClick={() => onDone(true)}>
-              Done
-            </Button>
-          </DialogActions>
-        </>
-      ) : (
-        <>
-          <DialogTitle
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
-          >
-            <span>Review Proposed Words ({proposals.length})</span>
-            <Button size="small" onClick={toggleAll}>
-              {selected.size === proposals.length ? 'Deselect All' : 'Select All'}
-            </Button>
-          </DialogTitle>
-          <DialogContent dividers>
-            <div className="enrichment-cards">
+            <DialogFooter>
+              <Button onClick={() => onDone(true)}>Done</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <div className="flex items-center justify-between gap-4 pr-8">
+                <DialogTitle>Review Proposed Words ({proposals.length})</DialogTitle>
+                <Button variant="ghost" size="sm" onClick={toggleAll}>
+                  {selected.size === proposals.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+            </DialogHeader>
+            <div className="enrichment-cards max-h-[65vh] overflow-y-auto">
               {proposals.map((p, i) => (
                 <IntakeProposalCard
                   key={i}
@@ -101,21 +102,17 @@ export default function IntakeReview({ proposals, onDone }: Props) {
                 />
               ))}
             </div>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => onDone(false)} disabled={applying}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleApply}
-              disabled={applying || selected.size === 0}
-            >
-              {applying ? 'Saving...' : `Save ${selected.size} Selected`}
-            </Button>
-          </DialogActions>
-        </>
-      )}
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => onDone(false)} disabled={applying}>
+                Cancel
+              </Button>
+              <Button onClick={handleApply} disabled={applying || selected.size === 0}>
+                {applying ? 'Saving...' : `Save ${selected.size} Selected`}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
@@ -134,7 +131,7 @@ function IntakeProposalCard({
   return (
     <div className={`enrichment-card ${checked ? 'selected' : ''}`}>
       <label className="enrichment-card-header">
-        <Checkbox checked={checked} onChange={onToggle} size="small" sx={{ p: 0.5 }} />
+        <Checkbox checked={checked} onCheckedChange={onToggle} />
         <span className="enrichment-word">{p.german}</span>
         {p.word_type && (
           <span className="enrichment-value enrichment-add" style={{ marginLeft: 'auto' }}>

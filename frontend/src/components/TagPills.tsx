@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import TextField from '@mui/material/TextField';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   type Tag,
   fetchTags,
@@ -63,24 +63,26 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
   return (
     <div className="tag-pills-row">
       {tags.map((t) => (
-        <Chip
-          key={t.id}
-          label={t.name}
-          size="small"
-          onDelete={() => handleRemove(t.id)}
-          sx={{ borderRadius: 999 }}
-        />
+        <Badge key={t.id} variant="secondary" className="rounded-full">
+          {t.name}
+          <button
+            type="button"
+            className="ml-1 cursor-pointer opacity-60 hover:opacity-100"
+            onClick={() => handleRemove(t.id)}
+            aria-label={`Remove tag ${t.name}`}
+          >
+            ×
+          </button>
+        </Badge>
       ))}
       {showInput ? (
         <span className="tag-input-wrapper">
-          <TextField
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tag name…"
             autoFocus
-            size="small"
-            variant="outlined"
-            sx={{ width: 160 }}
+            className="w-40"
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setShowInput(false);
@@ -97,20 +99,20 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
               {suggestions.slice(0, 8).map((t) => (
                 <Button
                   key={t.id}
-                  className="tag-dropdown-item"
+                  variant="ghost"
+                  size="sm"
+                  className="tag-dropdown-item w-full justify-start"
                   onClick={() => handleAdd(t.id)}
-                  fullWidth
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
                   {t.name}
                 </Button>
               ))}
               {!exactMatch && query.trim() && (
                 <Button
-                  className="tag-dropdown-item tag-dropdown-create"
+                  variant="ghost"
+                  size="sm"
+                  className="tag-dropdown-item tag-dropdown-create w-full justify-start"
                   onClick={handleCreateAndAdd}
-                  fullWidth
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
                   Create "{query.trim()}"
                 </Button>
@@ -119,13 +121,13 @@ export default function TagPills({ entityType, entityId, tags, onChange }: Props
           )}
         </span>
       ) : (
-        <Chip
-          label="+ tag"
-          size="small"
-          variant="outlined"
+        <Badge
+          variant="outline"
+          className="cursor-pointer rounded-full"
           onClick={() => setShowInput(true)}
-          sx={{ borderRadius: 999 }}
-        />
+        >
+          + tag
+        </Badge>
       )}
     </div>
   );

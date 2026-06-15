@@ -49,6 +49,8 @@ All extraction pipelines (OCR, WhatsApp) feed through `extractor/classifier.py` 
 | Package manager | Poetry (backend), npm (frontend) |
 | Backend framework | FastAPI + Uvicorn |
 | Frontend | React 19 + Vite + TypeScript |
+| UI components | shadcn/ui (Radix primitives, components vendored in `src/components/ui/`) |
+| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) + legacy `App.css` being migrated incrementally |
 | Agent framework | AutoGen (`autogen-agentchat`, `autogen-ext[anthropic]`) |
 | LLM | Anthropic Claude (claude-sonnet-4-20250514) via AutoGen's `AnthropicChatCompletionClient` |
 | Database | Supabase Postgres (project: `xbxaujxiltreasmmgewi`) |
@@ -229,8 +231,11 @@ Follow these rules when creating new tables, adding columns, or making any schem
 | `src/components/IntakeReview.tsx` | Modal for reviewing word proposals from the intake agent before saving (propose-review-apply) |
 | `src/components/EnrichmentReview.tsx` | Modal for reviewing enrichment proposals for existing words |
 | `src/components/QuizletView.tsx` | Quiz home (saved quizlets list), setup (generate & save with pool/run counts), session, results with run persistence and subset replay |
-| `src/App.css` | All styles: layout, messages, typing indicator, input bar, file previews, detail panels, tag pills, declension grid, corrections, quiz home/cards, practice stats |
-| `src/index.css` | CSS variables, dark/light mode via `prefers-color-scheme` |
+| `src/components/ui/` | shadcn/ui primitives (button, input, select, dialog, badge, checkbox, label, tabs, toggle, spinner, textarea). Owned by the project — edit freely; add new ones with `npx shadcn add <name>` |
+| `src/lib/utils.ts` | `cn()` class-merge helper used by shadcn components |
+| `src/App.css` | Legacy custom styles: layout, messages, typing indicator, input bar, file previews, detail panels, tag pills, declension grid, corrections, quiz home/cards, practice stats. Being migrated to Tailwind utilities incrementally |
+| `src/index.css` | Tailwind entry, shadcn theme tokens mapped to the sage palette, dark/light mode via `prefers-color-scheme` |
+| `components.json` | shadcn/ui CLI config (radix-nova style, aliases) |
 
 ## Design Decisions
 
@@ -253,7 +258,7 @@ Follow these rules when creating new tables, adding columns, or making any schem
 - Python: type hints everywhere, `from __future__ import annotations` at top of modules.
 - No comments that just narrate what the code does. Comments only for non-obvious intent.
 - Dataclasses for domain models, no Pydantic (keeping it lightweight).
-- Frontend: functional components, no class components. Minimal dependencies (no state library, no CSS framework).
+- Frontend: functional components, no class components. No state library. Styling via Tailwind CSS v4 + shadcn/ui components (vendored in `src/components/ui/`); prefer shadcn primitives over hand-rolled controls. Theme tokens live in `index.css` — legacy names (`--bg`, `--surface`, `--fg`, …) coexist with shadcn tokens (`--background`, `--primary`, `--muted-foreground`, …); never reintroduce `--muted`/`--accent` as text/brand colors (they are shadcn background tokens now).
 
 ## Roadmap (Planned Sub-Agents / Tools)
 

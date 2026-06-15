@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Toggle } from '@/components/ui/toggle';
 
 interface Props {
   onSend: (text: string, files: File[], enrich: boolean) => void;
@@ -23,7 +23,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -53,29 +53,31 @@ export default function ChatInput({ onSend, disabled }: Props) {
                 <span className="file-icon">📄</span>
               )}
               <span className="file-name">{f.name}</span>
-              <IconButton
+              <Button
                 type="button"
-                size="small"
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => removeFile(i)}
                 aria-label={`Remove ${f.name}`}
               >
                 ×
-              </IconButton>
+              </Button>
             </div>
           ))}
         </div>
       )}
       <div className="input-row">
-        <IconButton
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => fileRef.current?.click()}
           disabled={disabled}
           title="Attach files"
           aria-label="Attach files"
-          size="small"
         >
           +
-        </IconButton>
+        </Button>
         <input
           ref={fileRef}
           type="file"
@@ -84,43 +86,32 @@ export default function ChatInput({ onSend, disabled }: Props) {
           onChange={handleFiles}
           hidden
         />
-        <ToggleButton
-          value="enrich"
-          selected={enrich}
-          onChange={() => setEnrich((v) => !v)}
+        <Toggle
+          pressed={enrich}
+          onPressedChange={setEnrich}
           disabled={disabled}
-          size="small"
+          size="sm"
+          className="rounded-full px-3"
           title={
             enrich
               ? 'Full Enrichment: grammar details, tags, explanations (slower)'
               : 'Quick Save: basic word + translation (fast)'
           }
-          sx={{ textTransform: 'none', borderRadius: 999, px: 1.5 }}
         >
           {enrich ? 'Enrich' : 'Quick'}
-        </ToggleButton>
-        <TextField
-          className="text-input"
+        </Toggle>
+        <Textarea
+          className="text-input max-h-36 min-h-9 resize-none"
           placeholder="Send a word, sentence, or attach a photo..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          multiline
-          maxRows={6}
-          fullWidth
-          size="small"
-          variant="outlined"
+          rows={1}
         />
-        <IconButton
-          type="submit"
-          color="primary"
-          disabled={disabled}
-          aria-label="Send"
-          size="small"
-        >
+        <Button type="submit" variant="ghost" size="icon-sm" disabled={disabled} aria-label="Send">
           {disabled ? '...' : '→'}
-        </IconButton>
+        </Button>
       </div>
     </form>
   );

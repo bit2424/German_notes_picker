@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { type TextItem, deleteText, fetchTexts, updateText, createText } from '../api';
 import TextDetail from './TextDetail';
 
@@ -194,7 +194,7 @@ export default function TextsTable() {
         <div className="table-state-message">
           <p className="table-state-title">Failed to load texts</p>
           <p className="table-state-subtitle">Something went wrong while fetching your texts.</p>
-          <Button size="small" variant="contained" onClick={doFetch}>
+          <Button size="sm" onClick={doFetch}>
             Retry
           </Button>
         </div>
@@ -208,7 +208,7 @@ export default function TextsTable() {
         <div className="table-state-message">
           <p className="table-state-title">No texts stored yet</p>
           <p className="table-state-subtitle">Start building your collection by adding a text.</p>
-          <Button size="small" variant="contained" onClick={() => setShowCreate(true)}>
+          <Button size="sm" onClick={() => setShowCreate(true)}>
             + Add text
           </Button>
         </div>
@@ -225,15 +225,12 @@ export default function TextsTable() {
               <label className="table-search-label" htmlFor="texts-search">
                 Search texts
               </label>
-              <TextField
+              <Input
                 id="texts-search"
                 className="table-filter table-filter-primary"
                 placeholder="Search German or translation…"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                size="small"
-                variant="outlined"
-                fullWidth
               />
             </div>
             <div className="table-toolbar-actions">
@@ -243,7 +240,7 @@ export default function TextsTable() {
                   <span className="table-count-secondary">{tableSummarySecondary}</span>
                 )}
               </div>
-              <Button size="small" variant="contained" onClick={() => setShowCreate(!showCreate)}>
+              <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                 {showCreate ? 'Close' : '+ Add'}
               </Button>
             </div>
@@ -270,7 +267,7 @@ export default function TextsTable() {
 
         {showCreate && (
           <div className="create-row">
-            <TextField
+            <Input
               placeholder="German text…"
               value={createContent}
               onChange={(e) => setCreateContent(e.target.value)}
@@ -279,14 +276,11 @@ export default function TextsTable() {
                 if (e.key === 'Escape') setShowCreate(false);
               }}
               autoFocus
-              size="small"
-              variant="outlined"
-              fullWidth
             />
-            <Button size="small" variant="contained" onClick={handleCreate}>
+            <Button size="sm" onClick={handleCreate}>
               Create
             </Button>
-            <Button size="small" onClick={() => setShowCreate(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
               Cancel
             </Button>
           </div>
@@ -335,7 +329,7 @@ export default function TextsTable() {
                     <div className="table-state-message table-state-inline">
                       <p className="table-state-title">No texts match this view</p>
                       <p className="table-state-subtitle">Try adjusting your search.</p>
-                      <Button size="small" variant="contained" onClick={() => setFilter('')}>
+                      <Button size="sm" onClick={() => setFilter('')}>
                         Clear search
                       </Button>
                     </div>
@@ -347,38 +341,32 @@ export default function TextsTable() {
                   {editingId === t.id ? (
                     <tr className="editing-row" data-editing="true">
                       <td className="cell-text-column">
-                        <TextField
+                        <Input
                           value={editDraft.content ?? ''}
                           onChange={(e) => setEditDraft((d) => ({ ...d, content: e.target.value }))}
                           onKeyDown={(e) => handleEditKeyDown(e, t.id)}
                           autoFocus
-                          size="small"
-                          variant="outlined"
-                          fullWidth
                         />
                       </td>
                       <td className="cell-translation-column">
                         <div className="cell-translation-wrap">{primaryTranslation(t)}</div>
                       </td>
                       <td className="cell-source">
-                        <TextField
+                        <Input
                           className="cell-input-meta"
                           value={editDraft.source ?? ''}
                           onChange={(e) => setEditDraft((d) => ({ ...d, source: e.target.value }))}
                           onKeyDown={(e) => handleEditKeyDown(e, t.id)}
                           placeholder="Source"
-                          size="small"
-                          variant="outlined"
-                          fullWidth
                         />
                       </td>
                       <td className="cell-date">{t.date ?? '—'}</td>
                       <td className="actions-col">
                         <div className="row-actions row-actions-visible">
-                          <Button size="small" variant="contained" onClick={() => saveEdit(t.id)}>
+                          <Button size="sm" onClick={() => saveEdit(t.id)}>
                             Save
                           </Button>
-                          <Button size="small" onClick={cancelEdit}>
+                          <Button variant="ghost" size="sm" onClick={cancelEdit}>
                             Cancel
                           </Button>
                         </div>

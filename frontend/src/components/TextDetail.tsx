@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   type TextDetails,
   type WordItem,
@@ -108,21 +108,18 @@ function LinkedWords({
       {links.map((l) => (
         <div key={l.id} className="linked-word-row">
           <span className="linked-word-german">{l.words?.german ?? '?'}</span>
-          <Button size="small" color="error" onClick={() => handleUnlink(l.id)}>
+          <Button variant="destructive" size="sm" onClick={() => handleUnlink(l.id)}>
             Unlink
           </Button>
         </div>
       ))}
       {showSearch ? (
         <div className="linked-word-search">
-          <TextField
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search word to link…"
             autoFocus
-            size="small"
-            variant="outlined"
-            fullWidth
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setShowSearch(false);
@@ -136,10 +133,10 @@ function LinkedWords({
               {suggestions.slice(0, 8).map((w) => (
                 <Button
                   key={w.id}
-                  className="tag-dropdown-item"
+                  variant="ghost"
+                  size="sm"
+                  className="tag-dropdown-item w-full justify-start"
                   onClick={() => handleLink(w.id)}
-                  fullWidth
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
                   {w.german}
                 </Button>
@@ -149,7 +146,7 @@ function LinkedWords({
           )}
         </div>
       ) : (
-        <Button size="small" onClick={() => setShowSearch(true)}>
+        <Button variant="ghost" size="sm" onClick={() => setShowSearch(true)}>
           + Link word
         </Button>
       )}
